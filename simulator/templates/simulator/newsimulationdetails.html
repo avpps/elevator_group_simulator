@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Simulator_new_simulation</title>
+</head>
+
+
+<body>
+
+{% load static %}
+
+<script type="text/javascript" src="{{ STATIC_URL }} /static/jquery-3.2.1.js">
+</script> 
+
+<link rel="stylesheet" type="text/css" href="{% static 'simulator/style.css' %}" />
+
+<ul>
+	<li><a href="{% url 'simulator:index' %}">Home</a></li>
+	<li><a href="{% url 'simulator:newBuilding' %}">Create building</a></li>
+	<li><a href="{% url 'simulator:newBuilding' %}">Building details</a></li>
+	<li><a class="active" href="{% url 'simulator:newSimulation' %}">Make simulation</a></li>
+	<li><a href="{% url 'simulator:simulationStat' %}">Statistics</a></li>
+</ul>
+
+
+
+
+<h5>Simulation details:</h5>
+
+<p></p>
+
+<form action="{% url 'simulator:addSimulationDetails' %}" method="post">
+{% csrf_token %}
+
+<p>Last added {{ bname }}_with id={{ building_id }}</p>
+<td>Building id:<input type="number" name="building_id" 
+min="1" max="{{ building_id }}" value='{{ building_id }}'></td>
+
+<p></p>
+
+<table>
+	<tr> 
+		<th>Passangers arrival time</th>
+		<td><input type="number" name="passengersArrivalTime" 
+		min="1" max="99999" value='3600'></td>
+	</tr>
+	<tr>
+		<th>Start arrival rate [%5min]</th>
+		<td><input type="number" name="arrivalRate" 
+		min="0.01" max="100" step="0.01" value='2'></td>
+	</tr>
+	<tr>
+		<th>Arrival step</th>
+		<td><input type="number" name="arrivalRateStep" 
+		min="0.01" max="100" step="0.01" value='1'></td>
+	</tr>
+	<tr>
+		<th>End arrival rate [%5min]</th>
+		<td><input type="number" name="arrivalRateEnd" 
+		min="0.01" max="100" step="0.01" value='5'></td>
+	</tr>
+	<tr>
+		<th>Seed</th>
+		<td><input type="number" name="randomSeed" 
+		min="0.01" max="5000" step="0.01" value='37'></td>
+	</tr>
+</table>
+
+<p></p>
+<p></p>
+<p></p>
+
+<p><input type="submit" value="Add" /></p>
+</form>

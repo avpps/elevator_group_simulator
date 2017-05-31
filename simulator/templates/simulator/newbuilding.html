@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Simulator_building creator</title>
+</head>
+
+
+<body>
+
+{% load static %}
+
+<script type="text/javascript" src="{{ STATIC_URL }} /static/jquery-3.2.1.js">
+</script> 
+
+<link rel="stylesheet" type="text/css" href="{% static 'simulator/style.css' %}" />
+
+
+<ul>
+	<li><a href="{% url 'simulator:index' %}">Home</a></li>
+	<li><a class="active" href="{% url 'simulator:newBuilding' %}">Create building</a></li>
+	<li><a href="{% url 'simulator:newBuilding' %}">Building details</a></li>
+	<li><a href="{% url 'simulator:newSimulation' %}">Make simulation</a></li>
+	<li><a href="{% url 'simulator:simulationStat' %}">Statistics</a></li>
+</ul>
+
+
+<p></p>
+
+
+
+<form action="{% url 'simulator:addNewBuilding' %}" method="post">
+{% csrf_token %}
+
+
+
+<table>
+	<tr> 
+		<th>Building name</th>
+		<td><input class="ver2"; type="text" name="name" value="name"/></td>
+	</tr>
+	<tr> 
+		<th>Floors number</th>
+		<td><input class="ver2" type="number" name="floors" min="2" max="99" value="11"/></td>
+	</tr>
+	<tr> 
+		<th>Typical interfloor<br> distance</th>
+		<td><input class="ver2" type="number" name="floor_dist" min="1" max="8" value="3" step="0.01"/></td>
+	</tr>
+	<tr> 
+		<th>Typical population</th>
+		<td><input class="ver2" type="number" name="population" min="1" max="250" value="100"/></td>
+	</tr>
+	<tr> 
+		<th></th>
+		<td><input class="ver2" type="submit" value="Add" /></td>
+	</tr>
+</table>
+
+<p></p>
+</form>
+
+
+
+
+
+</body>
+</html>

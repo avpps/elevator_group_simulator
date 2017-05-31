@@ -1,0 +1,24 @@
+{% load static %}
+
+<script type="text/javascript" src="{{ STATIC_URL }} /static/jquery-3.2.1.js">
+</script> 
+
+<link rel="stylesheet" type="text/css" href="{% static 'simulator/style.css' %}" />
+
+<p>building_id: {{ building_id }}</p>
+<p>simulation_id: {{ simulation_id }}</p>
+<p>simulation_arr: {{ simulation_arr }}</p>
+<p>building_group_size: {{ building_group_size }}</p>
+
+<table>
+{% for a in alist %}
+	<tr>
+		<td>{{ a.id }}</td>
+		<td>{{ a.local_id }}</td>
+		<td>{{ a.name }}</td>
+		<td>{{ a.interfloor }}</td>
+		<td>{{ a.population }}</td>
+		<td>{{ a.entry }}</td>
+	</tr>
+{% endfor %}
+</table>

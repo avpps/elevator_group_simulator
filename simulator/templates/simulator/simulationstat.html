@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Simulator_stat</title>
+</head>
+
+
+
+<body>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+
+{% load static %}
+
+<link rel="stylesheet" type="text/css" href="{% static 'simulator/style.css' %}" />
+<link rel="stylesheet" type="text/css" href="{% static 'simulator/table1.css' %}" />
+
+
+
+
+<ul>
+	<li><a href="{% url 'simulator:index' %}">Home</a></li>
+	<li><a href="{% url 'simulator:newBuilding' %}">Create building</a></li>
+	<li><a href="{% url 'simulator:newBuilding' %}">Building details</a></li>
+	<li><a href="{% url 'simulator:newSimulation' %}">Make simulation</a></li>
+	<li><a class="active" href="{% url 'simulator:simulationStat' %}">Statistics</a></li>
+</ul>
+
+<p>
+<form action="{% url 'simulator:simulationStat' %}" method="post">
+{% csrf_token %}
+{% for no in charts_number %}
+	<select name="chartRequest{{ forloop.counter }}">
+	{% for sim in simulation_list %}
+		<option value={{ sim.id }}>{{ sim.id }}</option>
+	{% endfor %}
+	</select>
+{% endfor %}
+<input type="submit" value="Add" />
+</form>
+</p>
+
+<p>
+{{ line_chart1.as_html }}
+</p>
+<p>
+{{ line_chart2.as_html }}
+</p>
+<p>
+{{ line_chart3.as_html }}
+</p>
+
+
+
+<script>
+
+function show(a) {
+	document.getElementById('del'+a).style.display="none";
+	document.getElementById('can'+a).style.display="block";
+	document.getElementById('con'+a).style.display="block";
+}
+
+function hide(a) {
+	document.getElementById('del'+a).style.display="block";
+	document.getElementById('can'+a).style.display="none";
+	document.getElementById('con'+a).style.display="none";
+}
+
+function deleteapproval() {
+    confirm("Delete?");
+}
+</script>
+
+
+
+<script src="https://code.jquery.com/jquery-3.1.0.min.js"></script>
+<script src="{% static 'js/app.js' %}"></script>
+{% block javascript %}{% endblock %}
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Simulator_building details</title>
+</head>
+
+
+<body>
+
+{% load static %}
+
+<script type="text/javascript" src="{{ STATIC_URL }} /static/jquery-3.2.1.js">
+</script> 
+
+<link rel="stylesheet" type="text/css" href="{% static 'simulator/style.css' %}" />
+
+
+<ul>
+	<li><a href="{% url 'simulator:index' %}">Home</a></li>
+	<li><a href="{% url 'simulator:newBuilding' %}">Create building</a></li>
+	<li><a class="active" href="{% url 'simulator:newBuilding' %}">Building details</a></li>
+	<li><a href="{% url 'simulator:newSimulation' %}">Make simulation</a></li>
+	<li><a href="{% url 'simulator:simulationStat' %}">Statistics</a></li>
+</ul>
+
+
+
+<p></p>
+
+<form action="{% url 'simulator:addNewBuildingDetails' %}" method="post">
+{% csrf_token %}
+
+<p>Last added {{ bname }}_with id={{ building_id }}</p>
+<td>Building id:<input type="number" name="building_id" 
+min="1" max="{{ building_id }}" value='{{ building_id }}'></td>
+
+<p></p>
+<table>
+	<tr> 
+		<th>Id</th>
+		<th>Name</th>
+		<th>Interfloor</th>
+		<th>Population</th>
+		<th>Entry</th>
+	</tr>
+{% for i in floors %}
+	<tr>
+		<td><input type="number" name="id{{ forloop.counter }}" 
+		min="1" max="99" value='{{ forloop.counter }}'></td>
+		<td><input type="text" name="name{{ forloop.counter }}" 
+		value='{{ forloop.counter }}'></td>
+		<td><input type="number" name="floor_dist{{ forloop.counter }}" 
+		min="2" max="99" step="0.01" value='{{ floor_dist }}'></td>
+		<td><input type="number" name="population{{ forloop.counter }}" 
+		min="0" max="250" value='{{ population }}'></td>
+		<td><input type="number" name="entry{{ forloop.counter }}" 
+		min="0" max="100" step="0.01" value='0'></td>
+	</tr>
+{% endfor %}
+</table>
+
+<p></p>
+<p></p>
+
+<table>
+	<tr> 
+		<th>Cars number</th>
+		<td><input type="number" name="carsNumber" 
+		min="1" max="15" value='2'></td>
+	</tr>
+	<tr>
+		<th>Speed</th>
+		<td><input type="number" name="speed" 
+		min="0.01" max="10" step="0.01" value='1'></td>
+	</tr>
+	<tr>
+		<th>Acceleration</th>
+		<td><input type="number" name="acceleration" 
+		min="0.01" max="2" step="0.01" value='0.5'></td>	
+	</tr>
+	<tr>
+		<th>Jerk</th>
+		<td><input type="number" name="jerk" 
+		min="0.01" max="2" step="0.01" value='1.2'></td>
+	</tr>
+	<tr>
+		<th>Capacity</th>
+		<td><input type="number" name="carCapacity" 
+		min="2" max="26" step="1" value='13'></td>
+	</tr>
+	<tr>
+		<th>Passenger Transfer Time</th>
+		<td><input type="number" name="passengerTransferTime" 
+		min="0.5" max="5" step="0.1" value='0.9'></td>	
+	</tr>
+	<tr>
+		<th>Door Opening Time</th>
+		<td><input type="number" name="doorOpeningTime" 
+		min="1" max="8" step="0.1" value='1.9'></td>
+	</tr>
+	<tr>
+		<th>Door Closing Time</th>
+		<td><input type="number" name="doorClosingTime" 
+		min="1" max="8" step="0.1" value='3.4'></td>
+	</tr>
+</table>
+
+<p></p>
+<p></p>
+<p></p>
+
+<p><input type="submit" value="Add" /></p>
+</form>

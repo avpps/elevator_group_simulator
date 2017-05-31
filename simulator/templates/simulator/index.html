@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+
+
+<head>
+  <title>Simulator_home</title>
+</head>
+
+
+<meta http-equiv="refresh" content="20">
+
+
+
+
+<body>
+
+{% load static %}
+
+<link rel="stylesheet" type="text/css" href="{% static 'simulator/style.css' %}" />
+<link rel="stylesheet" type="text/css" href="{% static 'simulator/table1.css' %}" />
+
+
+<ul>
+	<li><a class="active" href="{% url 'simulator:index' %}">Home</a></li>
+	<li><a href="{% url 'simulator:newBuilding' %}">Create building</a></li>
+	<li><a href="{% url 'simulator:newBuilding' %}">Building details</a></li>
+	<li><a href="{% url 'simulator:newSimulation' %}">Make simulation</a></li>
+	<li><a href="{% url 'simulator:simulationStat' %}">Statistics</a></li>
+</ul>
+
+<div style="overflow-x:auto;">
+<h3>Last buildings:</h3>
+{% if buildings_list %}
+	<table class="index">
+		<tr> 
+			<th>Id</th>
+			<th>Name</th>
+			<th>Floors</th>
+			<th>Travel</th>
+			<th>Population</th>
+			<th>Cars</th>
+			
+		</tr>
+	{% for building in buildings_list %}
+		<tr>
+			<td>{{ building.id }}</td>
+			<td>{{ building.name }}</td>
+			<td>{{ building.floors }}</td>
+			<td>{{ building.floor_dist }}</td>
+			<td>{{ building.population }}</td>
+			<td>{% for aaaa in building.buildinggroup_set.all %}
+					{{ aaaa.carsNumber }}
+				{% endfor %}
+			</td>
+			<td style="padding: 0px;width:10px">
+			
+				<ul>
+				<button type="button" id='delsim{{ building.id }}' class="ver1" onclick="show('sim{{ building.id }}')">delete</button>
+				
+				<button type="button" id='cansim{{ building.id }}' class="ver2" style="display:none" onclick="hide('sim{{ building.id }}')">cancel</button>
+				
+				<form action="{% url 'simulator:deleteBuilding' %}" method="post">
+				{% csrf_token %}
+					<button id="consim{{ building.id }}" class="ver1" style="display:none" name="del" value="{{ building.id }}" >delete</button>
+				</form>
+				</ul>			
+			
+			
+			
+			
+
+			</td>
+			
+		</tr>
+	{% endfor %}
+	</table>
+{% else %}
+    <p>No buildings are available.</p>
+{% endif %}
+</div>
+
+
+<div style="overflow-x:auto;">
+<h3>Last simulations:</h3>
+{% if simulations_list %}
+	<table>
+
+		<tr> 
+			<th>Id</th>
+			<th>Building</th>
+			<th>Arr Rate</th>
+			<th><abbr title="Passengers avarage waiting time">AWT</abbr></th>
+			<th><abbr title="Passengers avarage time to destination">ATTD</abbr></th>
+			<th><abbr title="Avarage cars load factor">ACLF</abbr></th>
+			<th>Calculation date</th>
+		</tr>
+	{% for simulation in simulations_list %}
+		<tr>
+		
+			<td>
+
+
+
+			<form action="{% url 'simulator:simulationStat' %}" method="post">
+			{% csrf_token %}
+				<button class="ver2" name="chartRequest1" value="{{ simulation.id }}" >{{ simulation.id }}</button>
+			</form>
+
+			
+			</td>
+			<td>{{ simulation.building.id }}</td>
+			<td>{{ simulation.arrivalRate }}</td>
+
+			<td>{% for aaaa in simulation.statsimulation_set.all %}
+					{{ aaaa.AWT }}
+				{% endfor %}
+			</td>
+			<td>{% for aaaa in simulation.statsimulation_set.all %}
+					{{ aaaa.ATTD }}
+				{% endfor %}
+			</td>
+			<td>{% for aaaa in simulation.statsimulation_set.all %}
+					{{ aaaa.ACLF }}
+				{% endfor %}
+			</td>			
+			<td id="datecolumn">{{ simulation.date }}</td>
+			<td style="padding: 0px;width:10px">
+				<ul>
+				<button type="button" id='delsim{{ simulation.id }}' class="ver1" onclick="show('sim{{ simulation.id }}')">delete</button>
+				
+				<button type="button" id='cansim{{ simulation.id }}' class="ver2" style="display:none" onclick="hide('sim{{ simulation.id }}')">cancel</button>
+				
+				<form action="{% url 'simulator:deleteSimulation' %}" method="post">
+				{% csrf_token %}
+					<button id="consim{{ simulation.id }}" class="ver1" style="display:none" name="del" value="{{ simulation.id }}" >delete</button>
+				</form>
+				</ul>
+			</td>
+		</tr>
+	{% endfor %}
+	</table>
+{% else %}
+    <p>No buildings are available.</p>
+{% endif %}
+</div>
+
+
+<script>
+
+function show(a) {
+	document.getElementById('del'+a).style.display="none";
+	document.getElementById('can'+a).style.display="block";
+	document.getElementById('con'+a).style.display="block";
+}
+
+function hide(a) {
+	document.getElementById('del'+a).style.display="block";
+	document.getElementById('can'+a).style.display="none";
+	document.getElementById('con'+a).style.display="none";
+}
+
+function deleteapproval() {
+    confirm("Delete?");
+}
+</script>
+
+</body>
+</html>

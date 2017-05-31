@@ -1,0 +1,10 @@
+1 fix problem with deleteconfirmation box
+2 check possibility of more modern floor table and prepare additional view for building edition with:
+	- adding and removing floors
+3 improve Makesimulation page
+4 add stat simualtion page with:
+	- group details
+	- building details
+	- results details
+
+1_1 serial simuklations
