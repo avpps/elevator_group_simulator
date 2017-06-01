@@ -24,8 +24,16 @@ urlpatterns = [
         name='deleteSimulation'),
     url(r'^simulationstat/$', views.simulationStat,
         name='simulationStat'),
-    url(r'^signup/$', views.SignUpView.as_view(), name='signup'),
-    url(r'^ajax/validate_username/$', views.validate_username, name='validate_username'),
+    url(r'^signup/$', views.SignUpView.as_view(),
+        name='signup'),
+    url(r'^ajax/validate_username/$', views.validate_username,
+        name='validate_username'),
+    url(r'^signin/$', views.signIn,
+        name='signIn'),
+    url(r'^signinrun/$', views.signInRun,
+        name='signInRun'),
+    url(r'^logout/$', views.logOut,
+        name='logOut'),
 
 ]
 

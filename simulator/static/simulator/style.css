@@ -47,8 +47,8 @@ input[type=submit].ver1 {
     background-color: #cc0000;
     border: none;
     color: white;
-    padding: 3px;
-	width: 20%;
+    padding: 10px;
+	width: 100%;
     text-align: center;
     text-decoration: none;
     display: inline-block;
@@ -62,11 +62,11 @@ input[type=submit].ver2 {
     background-color: #cc0000;
     border: none;
     color: white;
-    padding: 3px 3px;
+    padding: 5px 3px;
     text-align: center;
     text-decoration: none;
     display: inline-block;
-    font-size: 80%;
+    font-size: 100%;
     margin: 0px 0px;
     cursor: pointer;
 }

@@ -6,6 +6,8 @@ from django.db.models import Avg, Sum
 from jchart import Chart
 from jchart.config import Axes, DataSet, rgba
 
+from django.contrib.auth.decorators import login_required
+
 ######  for tests  ##########
 
 import simpy
@@ -35,7 +37,7 @@ def indexView(request):
 def newBuilding(request):
     return render(request, 'simulator/newbuilding.html')
 
-
+@login_required(login_url='simulator:signIn')
 def addNewBuilding(request):
     try:
         name=request.POST['name']
@@ -102,7 +104,7 @@ def newBuildingDetails(request, building_id=None):
                   {'building':building,
                    'building_list':namelist},)
 
-
+@login_required(login_url='simulator:signIn')
 def addNewBuildingDetails(request):
     building_id = request.POST['building_id']
     building = get_object_or_404(Building, pk=building_id)
@@ -139,6 +141,7 @@ def newSimulation(request):
                   {'building_list':namelist,})
 
 
+@login_required(login_url='simulator:signIn')
 def addSimulationDetails(request):
     
     building_id = request.POST['building_id']
@@ -175,20 +178,26 @@ def addSimulationDetails(request):
                                        
     return HttpResponseRedirect(reverse('simulator:simulationRun'))
 
+
+@login_required(login_url='simulator:signIn')
 def deleteBuilding(request):
 
     building_id = request.POST['del']
     get_object_or_404(Building, pk=building_id).delete()
 
     return HttpResponseRedirect(reverse('simulator:index'))
-    
+
+
+@login_required(login_url='simulator:signIn')   
 def deleteSimulation(request):
 
     simulation_id = request.POST['del']
     get_object_or_404(SimulationDetails, pk=simulation_id).delete()
 
     return HttpResponseRedirect(reverse('simulator:index'))
-    
+
+
+
 def simulationRun(request):
 
 
@@ -302,9 +311,18 @@ def simulationRun(request):
                                              departure=round(j.carDepartures[k][0], 2),
                                              INT=round(INT, 2),
                                              load=j.carDepartures[k][1],)
+
+            try:
+                AINT = SINT/(len(j.carDepartures))
+            except ZeroDivisionError:
+                AINT = 0
                 
-            AINT = SINT/(len(j.carDepartures))
-            ACLF = SCLF/(len(j.carDepartures))
+            try:
+                ACLF = SCLF/(len(j.carDepartures))
+            except ZeroDivisionError:
+                ACLF = 0
+                
+                
             StatCars.objects.create(simulation=simulation_object,
                                     step=arrivalRate,
                                     
@@ -855,12 +873,12 @@ from django.contrib.auth.forms import UserCreationForm
 from django.views.generic.edit import CreateView
 from django.contrib.auth.models import User
 from django.http import JsonResponse
+from django.contrib.auth import authenticate, login, logout
 
 
 class SignUpView(CreateView):
     template_name = 'simulator/signup.html'
     form_class = UserCreationForm
-
 
 def validate_username(request):
     username = request.GET.get('username', None)
@@ -868,3 +886,21 @@ def validate_username(request):
         'is_taken': User.objects.filter(username__iexact=username).exists()
     }
     return JsonResponse(data)
+
+def signIn(request):
+    return render(request, 'simulator/signin.html')
+
+def signInRun(request):
+    username = request.POST['username']
+    password = request.POST['password']
+    user = authenticate(request, username=username, password=password)
+    if user is not None:
+        login(request, user)
+        return HttpResponseRedirect(reverse('simulator:index'))
+    else:
+        return render(request, 'simulator/signin.html')
+
+def logOut(request):
+    logout(request)
+    return HttpResponseRedirect(reverse('simulator:index'))
+    

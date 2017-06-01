@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Sign</title>
+</head>
+
+{% load static %}
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+
+<link rel="stylesheet" type="text/css" href="{% static 'simulator/style.css' %}" />
+
+
+<body>
+
+
+	<ul>
+		<li><a href="{% url 'simulator:index' %}">Home</a></li>
+		<li><a href="{% url 'simulator:newBuilding' %}">Create building</a></li>
+		<li><a href="{% url 'simulator:newBuildingDetails' %}">Building details</a></li>
+		<li><a href="{% url 'simulator:newSimulation' %}">Run simulation</a></li>
+		<li><a href="{% url 'simulator:simulationStat' %}">Statistics</a></li>
+		<li><a class="active" href="{% url 'simulator:signIn' %}">SignIn</a></li>
+	</ul>
+	
+		
+	<div class='flex-container'>
+		
+		<div class="flex-item2">
+			<table>
+				<form action="{% url 'simulator:signInRun' %}" method="post">
+				{% csrf_token %}
+				<tr> 
+					<th>username</th>
+					<td><input class="ver2" type="text" name="username"></td>
+				</tr>
+				<tr>
+					<th>password</th>
+					<td><input class="ver2" type="password" name="password"></td>
+				</tr>
+				<tr> 
+					<th></th>
+					<td><input class="ver2" type="submit" value="sign in" /></td>
+				</tr>
+				</form>
+				<tr> 
+				</tr>
+				<tr> 
+				</tr>
+				<tr>
+					<th></th>
+					<td>
+						<form action="{% url 'simulator:signup' %}" method="post">
+							{% csrf_token %}
+							<input class="ver1" type="submit" value="sign up" />
+						</form>
+					</td>
+				</tr>
+				<tr>
+					<th></th>
+					<td>
+						<form action="{% url 'simulator:logOut' %}">
+							<input class="ver1" type="submit" value="log out" />
+						</form>
+					</td>
+				</tr>
+			</table>
+		</div>
+	</div>
+
+
+	<script src="https://code.jquery.com/jquery-3.1.0.min.js"></script>
+	<script src="{% static 'js/app.js' %}"></script>
+	{% block javascript %}{% endblock %}
+
+
+
+</body>
+</html>
