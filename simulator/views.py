@@ -48,26 +48,59 @@ def addNewBuilding(request):
                                 floors=floors,
                                 floor_dist=floor_dist,
                                 population=population,)
+
+        namelist = Building.objects.order_by('id')
+        building_id = namelist[len(namelist)-1].id
+        building = get_object_or_404(Building, pk=building_id)
+
+        for i in range(1, int(floors)+1):
+            BuildingFloors.objects.create(building=building,
+                                          local_id=i,
+                                          name=i,
+                                          interfloor=floor_dist,
+                                          population=population,
+                                          entry=0,)
+            
+        BuildingGroup.objects.create(building=building,
+                                      carsNumber=request.POST['carsNumber'],
+                                      speed=request.POST['speed'],
+                                      acceleration=request.POST['acceleration'],
+                                      jerk=request.POST['jerk'],
+                                      carCapacity=request.POST['carCapacity'],
+                                      passengerTransferTime=request.POST['passengerTransferTime'],
+                                      doorOpeningTime=request.POST['doorOpeningTime'],
+                                      doorClosingTime=request.POST['doorClosingTime'],
+                                      )
+        SumsBuil = BuildingFloors.objects.filter(building=building).aggregate(Sum('population'), Sum('interfloor'))
+
+        Building.objects.filter(pk=building_id).update(population=SumsBuil['population__sum'],
+                                                    floor_dist=SumsBuil['interfloor__sum'],)
+
     except ValueError:
         return render(request, 'simulator/newbuilding.html')
     else:
         return HttpResponseRedirect(reverse('simulator:newBuildingDetails'))
 
 
-def newBuildingDetails(request):    
-    def floors(x):
-        return 'x'*x
+def newBuildingDetails(request, building_id=None):
     
-    namelist = Building.objects.order_by('id')
-    b_id = len(namelist)-1
+    namelist = Building.objects.all().order_by('-id')
+
+    if building_id:
+        building = get_object_or_404(Building, pk=building_id)
+
+    else:
+        try:
+            building_id = request.POST['building_request']
+            building = get_object_or_404(Building, pk=building_id)
+
+        except KeyError:
+            return render(request, 'simulator/newbuildingdetails.html',
+                          {'building_list':namelist},)
         
     return render(request, 'simulator/newbuildingdetails.html',
-                  {'building_id':namelist[b_id].id,
-                   'bname':namelist[b_id].name,
-                   'floors':floors(namelist[b_id].floors),
-                   'floorsno':namelist[b_id].floors,
-                   'floor_dist':namelist[b_id].floor_dist,
-                   'population':namelist[b_id].population,})
+                  {'building':building,
+                   'building_list':namelist},)
 
 
 def addNewBuildingDetails(request):
@@ -76,40 +109,34 @@ def addNewBuildingDetails(request):
     floors = building.floors
 
     for i in range(1, floors+1):
-        BuildingFloors.objects.create(building=building,
-                                      local_id=request.POST['id{cd}'.format(cd=i)],
-                                      name=request.POST['name{cd}'.format(cd=i)],
-                                      interfloor=request.POST['floor_dist{cd}'.format(cd=i)],
-                                      population=request.POST['population{cd}'.format(cd=i)],
-                                      entry=request.POST['entry{cd}'.format(cd=i)],)
+        BuildingFloors.objects.filter(building=building).filter(local_id=i).update(name=request.POST['name{cd}'.format(cd=i)],
+                                                                                   interfloor=request.POST['floor_dist{cd}'.format(cd=i)],
+                                                                                   population=request.POST['population{cd}'.format(cd=i)],
+                                                                                   entry=request.POST['entry{cd}'.format(cd=i)],)
 
-    BuildingGroup.objects.create(building=building,
-                                  carsNumber=request.POST['carsNumber'],
-                                  speed=request.POST['speed'],
-                                  acceleration=request.POST['acceleration'],
-                                  jerk=request.POST['jerk'],
-                                  carCapacity=request.POST['carCapacity'],
-                                  passengerTransferTime=request.POST['passengerTransferTime'],
-                                  doorOpeningTime=request.POST['doorOpeningTime'],
-                                  doorClosingTime=request.POST['doorClosingTime'],
-                                  )
+    BuildingGroup.objects.filter(building=building).update(carsNumber=request.POST['carsNumber'],
+                                                           speed=request.POST['speed'],
+                                                           acceleration=request.POST['acceleration'],
+                                                           jerk=request.POST['jerk'],
+                                                           carCapacity=request.POST['carCapacity'],
+                                                           passengerTransferTime=request.POST['passengerTransferTime'],
+                                                           doorOpeningTime=request.POST['doorOpeningTime'],
+                                                           doorClosingTime=request.POST['doorClosingTime'],)
 
     SumsBuil = BuildingFloors.objects.filter(building=building).aggregate(Sum('population'), Sum('interfloor'))
 
     Building.objects.filter(pk=building_id).update(population=SumsBuil['population__sum'],
                                                 floor_dist=SumsBuil['interfloor__sum'],)
     
-    return HttpResponseRedirect(reverse('simulator:index'))
+    return HttpResponseRedirect(reverse('simulator:newBuildingDetails'))
 
 
 def newSimulation(request):
 
-    namelist = Building.objects.order_by('id')
-    b_id = len(namelist)-1
+    namelist = Building.objects.order_by('-id')
 
     return render(request, 'simulator/newsimulationdetails.html',
-                  {'building_id':namelist[b_id].id,
-                   'bname':namelist[b_id].name,})
+                  {'building_list':namelist,})
 
 
 def addSimulationDetails(request):
@@ -778,6 +805,15 @@ class SummaryChart(Chart):
     scales = {
         'xAxes': [Axes(type='linear', position='bottom')],
     }
+    layout = {
+        'padding': {
+            #'left': [100],
+            #'right': [0],
+            #'top': [0],
+            'buttom': [333],
+        }
+    }
+        
 
     def get_datasets(self, **kwargs):
 
@@ -797,23 +833,19 @@ class SummaryChart(Chart):
         AINT = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[3])]
         ACLF = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[4])]
         
-        return [DataSet(type='line',
-                        label='AWT_{a}'.format(a=self.simulation_id),
+        return [DataSet(label='AWT_{a}'.format(a=self.simulation_id),
                         color=(255, 0, 0),
                         fill = False,
                         data=AWT,),
-                DataSet(type='line',
-                        label='ATTD',
+                DataSet(label='ATTD',
                         color=(255, 191, 0),
                         fill = False,
                         data=ATTD,),
-                DataSet(type='line',
-                        label='AINT',
+                DataSet(label='AINT',
                         color=(0, 255, 0),
                         fill = False,
                         data=AINT,),
-                DataSet(type='line',
-                        label='ACLF',
+                DataSet(label='ACLF',
                         color=(64, 0, 255),
                         fill = False,
                         data=ACLF,),]

@@ -5,64 +5,94 @@
   <title>Simulator_building creator</title>
 </head>
 
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'simulator/style.css' %}" />
+
+<script type="text/javascript" src="{{ STATIC_URL }} /static/jquery-3.2.1.js"></script> 
 
 <body>
 
-{% load static %}
+	<ul>
+		<li><a href="{% url 'simulator:index' %}">Home</a></li>
+		<li><a class="active" href="{% url 'simulator:newBuilding' %}">Create building</a></li>
+		<li><a href="{% url 'simulator:newBuildingDetails' %}">Building details</a></li>
+		<li><a href="{% url 'simulator:newSimulation' %}">Run simulation</a></li>
+		<li><a href="{% url 'simulator:simulationStat' %}">Statistics</a></li>
+	</ul>
+	
+	<div class='flex-container'>
+		
+		<div class="flex-item2">
 
-<script type="text/javascript" src="{{ STATIC_URL }} /static/jquery-3.2.1.js">
-</script> 
+			<form action="{% url 'simulator:addNewBuilding' %}" method="post">
+			{% csrf_token %}
 
-<link rel="stylesheet" type="text/css" href="{% static 'simulator/style.css' %}" />
+				<table>
+					<tr> 
+						<th>Building name</th>
+						<td><input class="ver2"; type="text" name="name" value="name"/></td>
+					</tr>
+					<tr> 
+						<th>Floors number</th>
+						<td><input class="ver2" type="number" name="floors" min="2" max="99" value="11"/></td>
+					</tr>
+					<tr> 
+						<th>Typical interfloor<br> distance</th>
+						<td><input class="ver2" type="number" name="floor_dist" min="1" max="8" value="3" step="0.01"/></td>
+					</tr>
+					<tr> 
+						<th>Typical population</th>
+						<td><input class="ver2" type="number" name="population" min="1" max="250" value="100"/></td>
+					</tr>
+					<tr> 
+						<th>Cars number</th>
+						<td><input class="ver2" type="number" name="carsNumber" 
+						min="1" max="15" value='2'></td>
+					</tr>
+					<tr>
+						<th>Speed</th>
+						<td><input class="ver2" type="number" name="speed" 
+						min="0.01" max="10" step="0.01" value='1'></td>
+					</tr>
+					<tr>
+						<th>Acceleration</th>
+						<td><input class="ver2" type="number" name="acceleration" 
+						min="0.01" max="2" step="0.01" value='0.5'></td>	
+					</tr>
+					<tr>
+						<th>Jerk</th>
+						<td><input class="ver2" type="number" name="jerk" 
+						min="0.01" max="2" step="0.01" value='1.2'></td>
+					</tr>
+					<tr>
+						<th>Capacity</th>
+						<td><input class="ver2" type="number" name="carCapacity" 
+						min="2" max="26" step="1" value='13'></td>
+					</tr>
+					<tr>
+						<th>Passenger Transfer Time</th>
+						<td><input class="ver2" type="number" name="passengerTransferTime" 
+						min="0.5" max="5" step="0.1" value='0.9'></td>	
+					</tr>
+					<tr>
+						<th>Door Opening Time</th>
+						<td><input class="ver2" type="number" name="doorOpeningTime" 
+						min="1" max="8" step="0.1" value='1.9'></td>
+					</tr>
+					<tr>
+						<th>Door Closing Time</th>
+						<td><input class="ver2" type="number" name="doorClosingTime" 
+						min="1" max="8" step="0.1" value='3.4'></td>
+					</tr>
+					
+					<tr> 
+						<th></th>
+						<td><input class="ver2" type="submit" value="Add" /></td>
+					</tr>
+				</table>
 
-
-<ul>
-	<li><a href="{% url 'simulator:index' %}">Home</a></li>
-	<li><a class="active" href="{% url 'simulator:newBuilding' %}">Create building</a></li>
-	<li><a href="{% url 'simulator:newBuilding' %}">Building details</a></li>
-	<li><a href="{% url 'simulator:newSimulation' %}">Make simulation</a></li>
-	<li><a href="{% url 'simulator:simulationStat' %}">Statistics</a></li>
-</ul>
-
-
-<p></p>
-
-
-
-<form action="{% url 'simulator:addNewBuilding' %}" method="post">
-{% csrf_token %}
-
-
-
-<table>
-	<tr> 
-		<th>Building name</th>
-		<td><input class="ver2"; type="text" name="name" value="name"/></td>
-	</tr>
-	<tr> 
-		<th>Floors number</th>
-		<td><input class="ver2" type="number" name="floors" min="2" max="99" value="11"/></td>
-	</tr>
-	<tr> 
-		<th>Typical interfloor<br> distance</th>
-		<td><input class="ver2" type="number" name="floor_dist" min="1" max="8" value="3" step="0.01"/></td>
-	</tr>
-	<tr> 
-		<th>Typical population</th>
-		<td><input class="ver2" type="number" name="population" min="1" max="250" value="100"/></td>
-	</tr>
-	<tr> 
-		<th></th>
-		<td><input class="ver2" type="submit" value="Add" /></td>
-	</tr>
-</table>
-
-<p></p>
-</form>
-
-
-
-
+			</form>
+		</div>
 
 </body>
 </html>

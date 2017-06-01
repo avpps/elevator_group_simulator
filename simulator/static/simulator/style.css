@@ -120,11 +120,84 @@ input.ver1 {
 
 input.ver2 {
 	background-color: #e6e6e6;
+    width: 100%;
+    padding: 5px 10px;
+    margin: 0px 0;
+	border: none;
+	text-align: center;
+
+    box-sizing: border-box;
+}
+
+input.ver3 {
+	background-color: #e6e6e6;
     width: 50%;
     padding: 5px 10px;
     margin: 0px 0;
 	border: none;
 
     box-sizing: border-box;
+}
+
+
+select {
+    background-color: #e6e6e6;
+    color: black;
+    display: block;
+    padding: 12px;
+	width: 110px;
+	border: none;
+    text-decoration: none;
+    text-align: right;
+}
+
+select:hover {
+    background-color: #ccc;
+}
+
+select.active {
+    background-color: #4CAF50;
+    color: white;
+}
+
+
+
+
+
+div.flex-container {
+    display: -webkit-flex;
+    display: flex;  
+
+    width: 100%;
+    height: 100%;
+}
+
+div.flex-item1 {
+    width: 150px;
+    height: 30px;
+}
+
+div.flex-item2 {
+    width: 800px;
+
+}
+
+
+nav.vertical-menu {
+    width: 110px;
+}
+
+nav.vertical-menu input {
+    background-color: #eee;
+	width: 110px;
+    color: black;
+    display: block;
+    padding: 12px;
+	border: none;
+    text-decoration: none;
+}
+
+nav.vertical-menu input:hover {
+    background-color: #eeee;
 }
 
