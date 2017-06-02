@@ -1,48 +1,60 @@
-{% load static %}<!doctype html>
+<!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <title>{% block title %}Default Title{% endblock %}</title>
-    <link rel="stylesheet" type="text/css" href="{% static 'css/app.css' %}">
-    {% block stylesheet %}{% endblock %}
-  </head>
-  <body>
-    <header>
-      ...
-    </header>
-    <main>
+
+<head>
+  <title>Register</title>
+</head>
+
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'simulator/style.css' %}" />
+
+<script type="text/javascript" src="{{ STATIC_URL }} /static/jquery-3.2.1.js"></script>
+<script src="https://code.jquery.com/jquery-3.1.0.min.js"></script>
+<script src="{% static 'js/app.js' %}"></script> 
+
+<body>
+
+	<ul>
+		<li><a href="{% url 'simulator:index' %}">Home</a></li>
+		<li><a href="{% url 'simulator:newBuilding' %}">Create building</a></li>
+		<li><a href="{% url 'simulator:newBuildingDetails' %}">Building details</a></li>
+		<li><a href="{% url 'simulator:newSimulation' %}">Run simulation</a></li>
+		<li><a href="{% url 'simulator:simulationStat' %}">Statistics</a></li>
+		<li><a class="active" href="{% url 'simulator:signIn' %}">SignIn</a></li>
+	</ul>
+
+	<div class='flex-container'>
+		
+		<div class="flex-item2">
+
 
 		  <form method="post">
 			{% csrf_token %}
 			{{ form.as_p }}
 			<button type="submit">Sign up</button>
 		  </form>
+		  
+	</div>
 
-    </main>
-    <footer>
-      ...
-    </footer>
-    <script src="https://code.jquery.com/jquery-3.1.0.min.js"></script>
-    <script src="{% static 'js/app.js' %}"></script>
-		  <script>
-			$("#id_username").change(function () {
-			  var username = $(this).val();
+	<script>
+	$("#id_username").change(function () {
+	  var username = $(this).val();
 
-			  $.ajax({
-				url: '/ajax/validate_username/',
-				data: {
-				  'username': username
-				},
-				dataType: 'json',
-				success: function (data) {
-				  if (data.is_taken) {
-					alert("A user with this username already exists.");
-				  }
-				}
-			  });
+	  $.ajax({
+		url: '/ajax/validate_username/',
+		data: {
+		  'username': username
+		},
+		dataType: 'json',
+		success: function (data) {
+		  if (data.is_taken) {
+			alert("A user with this username already exists.");
+		  }
+		}
+	  });
 
-			});
-		  </script>
+	});
+	</script>
 		  
 		  
 		  

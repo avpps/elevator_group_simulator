@@ -6,7 +6,7 @@ from django.db.models import Avg, Sum
 from jchart import Chart
 from jchart.config import Axes, DataSet, rgba
 
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 
 ######  for tests  ##########
 
@@ -787,6 +787,7 @@ def simulationStat(request, simulation_id=None):
     charts_number = [1, 1, 1]
     
     simulation_list = SimulationDetails.objects.all().order_by('-id')
+    summary_chart_parameterized = SummaryChartParameterized()
      
     try:
         simulation_id1 = request.POST['chartRequest1']
@@ -807,16 +808,19 @@ def simulationStat(request, simulation_id=None):
                        'line_chart2':chart2,
                        'line_chart3':chart3,
                        'simulation_list':simulation_list,
-                       'charts_number':charts_number,},)
+                       'charts_number':charts_number,
+                       'summary_chart_parameterized':summary_chart_parameterized},)
     except KeyError:
         if simulation_id:
             return render(request, 'simulator/simulationstat.html',
                           {'simulation_list':simulation_list,
-                           'charts_number':charts_number,},)        
+                           'charts_number':charts_number,
+                           'summary_chart_parameterized':summary_chart_parameterized,},)        
         else:
             return render(request, 'simulator/simulationstat.html',
                           {'simulation_list':simulation_list,
-                           'charts_number':charts_number,},)
+                           'charts_number':charts_number,
+                           'summary_chart_parameterized':summary_chart_parameterized,},)
 
 class SummaryChart(Chart):
     chart_type = 'line'
@@ -828,10 +832,9 @@ class SummaryChart(Chart):
             #'left': [100],
             #'right': [0],
             #'top': [0],
-            'buttom': [333],
+            'bottom': [0],
         }
     }
-        
 
     def get_datasets(self, **kwargs):
 
@@ -867,6 +870,73 @@ class SummaryChart(Chart):
                         color=(64, 0, 255),
                         fill = False,
                         data=ACLF,),]
+
+
+
+class SummaryChartParameterized(Chart):
+    chart_type = 'line'
+    scales = {
+        'xAxes': [Axes(type='linear', position='bottom')],
+    }
+    '''layout = {
+        'padding': {
+            'left': [100],
+            'right': [0],
+            'top': [0],
+            'bottom': [333],
+        }
+    }'''
+        
+    def get_datasets(self, simulation_id):
+
+        simulation_object = get_object_or_404(SimulationDetails, pk=simulation_id)
+
+        forchart=simulation_object.statsimulation_set.all()
+        forchartlist = [[],[],[],[],[]]
+        for asdfgh in forchart:
+            forchartlist[0].append(asdfgh.step)
+            forchartlist[1].append(asdfgh.AWT)
+            forchartlist[2].append(asdfgh.ATTD)
+            forchartlist[3].append(asdfgh.AINT)
+            forchartlist[4].append(asdfgh.ACLF)
+       
+        AWT = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[1])]
+        ATTD = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[2])]
+        AINT = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[3])]
+        ACLF = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[4])]
+        
+        return [DataSet(label='AWT_{a}'.format(a=simulation_id),
+                        color=(255, 0, 0),
+                        fill = False,
+                        data=AWT,),
+                DataSet(label='ATTD',
+                        color=(255, 191, 0),
+                        fill = False,
+                        data=ATTD,),
+                DataSet(label='AINT',
+                        color=(0, 255, 0),
+                        fill = False,
+                        data=AINT,),
+                DataSet(label='ACLF',
+                        color=(64, 0, 255),
+                        fill = False,
+                        data=ACLF,),]
+
+class TestChart(Chart):
+    chart_type = 'line'
+    scales = {
+        'xAxes': [Axes(type='linear', position='bottom')],
+    }
+        
+    def get_datasets(self, value):
+       
+        AWT = [{'x': 0, 'y': 0}, {'x': 1, 'y': value}]
+
+        return [DataSet(label='AWT',
+                        color=(255, 0, 0),
+                        fill = False,
+                        data=AWT,),]
+
 
 
 from django.contrib.auth.forms import UserCreationForm

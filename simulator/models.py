@@ -2,14 +2,28 @@ import datetime
 
 from django.db import models
 from django.utils import timezone
+from django.contrib.auth.models import Group
+
+class StandardUsers(Group):
+    pass
+    
+    
 
 
+    
 class Building(models.Model):
     date = models.DateTimeField(default=timezone.now, blank=True)
     name = models.CharField(max_length=200)
     floors = models.IntegerField(default=9)
     floor_dist = models.FloatField(default=3)
     population = models.IntegerField(default=50)
+
+    class Meta:
+        permissions = (
+            ("view_building", "Can see available buildings"),
+        )
+
+    
 
 class BuildingFloors(models.Model):
     building = models.ForeignKey(Building, on_delete=models.CASCADE)

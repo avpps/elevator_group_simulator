@@ -1,19 +1,19 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <title>Simulator_stat</title>
 </head>
 
 {% load static %}
+{% load jchart %}
+
+<link rel="stylesheet" type="text/css" href="{% static 'simulator/style.css' %}" />
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.bundle.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
 
-<link rel="stylesheet" type="text/css" href="{% static 'simulator/style.css' %}" />
-
-
 <body>
-
 
 	<ul>
 		<li><a href="{% url 'simulator:index' %}">Home</a></li>
@@ -21,9 +21,9 @@
 		<li><a href="{% url 'simulator:newBuildingDetails' %}">Building details</a></li>
 		<li><a href="{% url 'simulator:newSimulation' %}">Run simulation</a></li>
 		<li><a class="active" href="{% url 'simulator:simulationStat' %}">Statistics</a></li>
+		<li><a href="{% url 'simulator:signIn' %}">SignIn</a></li>
 	</ul>
 	
-		
 	<div class='flex-container'>
 	
 		<div class="flex-item1">
@@ -41,14 +41,30 @@
 			</form>
 		</nav>
 		</div>
+		
+		aasdasadsas
 
 		<div class="flex-item2">
 			{{ line_chart1.as_html }}
 			{{ line_chart2.as_html }}
 			{{ line_chart3.as_html }}
+			
+			{% for sim in simulation_list %}
+				{% render_chart 'simulator:summary_chart_parameterized' sim.id %}
+			{% endfor %}		
+	
+			
+
+			
+			{% render_chart 'simulator:summary_chart_parameterized' 203 %}
+			{% render_chart 'simulator:test_chart' 5 %}
+			
+			
 		</div>
 		
 	</div>
+	
+	
 
 
 	<script src="https://code.jquery.com/jquery-3.1.0.min.js"></script>

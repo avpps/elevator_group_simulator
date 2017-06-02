@@ -1,21 +1,16 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <title>Simulator_building details</title>
 </head>
 
 {% load static %}
-
 <link rel="stylesheet" type="text/css" href="{% static 'simulator/style.css' %}" />
 
-
+<script type="text/javascript" src="{{ STATIC_URL }} /static/jquery-3.2.1.js"></script> 
 
 <body>
-
-	<script type="text/javascript" src="{{ STATIC_URL }} /static/jquery-3.2.1.js">
-	</script> 
-
-	<link rel="stylesheet" type="text/css" href="{% static 'simulator/style.css' %}" />
 
 	<ul>
 		<li><a href="{% url 'simulator:index' %}">Home</a></li>
@@ -23,6 +18,7 @@
 		<li><a class="active" href="{% url 'simulator:newBuildingDetails' %}">Building details</a></li>
 		<li><a href="{% url 'simulator:newSimulation' %}">Run simulation</a></li>
 		<li><a href="{% url 'simulator:simulationStat' %}">Statistics</a></li>
+		<li><a href="{% url 'simulator:signIn' %}">SignIn</a></li>
 	</ul>
 
 	<div class='flex-container'>

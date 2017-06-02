@@ -127,13 +127,16 @@
 			<td id="datecolumn">{{ simulation.date }}</td>
 			<td style="padding: 0px;width:10px">
 				<ul>
-				<button type="button" id='delsim{{ simulation.id }}' class="ver1" onclick="show('sim{{ simulation.id }}')">delete</button>
+				<button type="button" id='delsim{{ simulation.id }}' class="ver1" 
+						onclick="show('sim{{ simulation.id }}')">delete</button>
 				
-				<button type="button" id='cansim{{ simulation.id }}' class="ver2" style="display:none" onclick="hide('sim{{ simulation.id }}')">cancel</button>
+				<button type="button" id='cansim{{ simulation.id }}' class="ver2" style="display:none" 
+						onclick="hide('sim{{ simulation.id }}')">cancel</button>
 				
 				<form action="{% url 'simulator:deleteSimulation' %}" method="post">
 				{% csrf_token %}
-					<button id="consim{{ simulation.id }}" class="ver1" style="display:none" name="del" value="{{ simulation.id }}" >delete</button>
+					<button id="consim{{ simulation.id }}" class="ver1" style="display:none" 
+							name="del" value="{{ simulation.id }}" >delete</button>
 				</form>
 				</ul>
 			</td>
