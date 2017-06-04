@@ -31,7 +31,7 @@ urlpatterns = [
         name='simulationStat'),
     url(r'^signup/$', views.SignUpView.as_view(),
         name='signup'),
-    url(r'^ajax/validate_username/$', views.validate_username,
+    url(r'^signup/ajax/validate_username/$', views.validate_username,
         name='validate_username'),
     url(r'^signin/$', views.signIn,
         name='signIn'),
@@ -45,6 +45,8 @@ urlpatterns = [
     url(r'^testchart/(?P<value>[0-9]+)/$',
         ChartView.from_chart(test_chart),
         name='test_chart'),
+    url(r'^simulationstat/ajax/generateChart/$', views.generateChart,
+        name='generateChart'),
 
 ]
 

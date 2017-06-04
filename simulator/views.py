@@ -950,6 +950,7 @@ class SignUpView(CreateView):
     template_name = 'simulator/signup.html'
     form_class = UserCreationForm
 
+
 def validate_username(request):
     username = request.GET.get('username', None)
     data = {
@@ -974,3 +975,14 @@ def logOut(request):
     logout(request)
     return HttpResponseRedirect(reverse('simulator:index'))
     
+
+def generateChart(request):
+    simulation_id = request.GET.get('simulation_id', None)
+    chart=SummaryChart()
+    chart.simulation_id=simulation_id
+
+    data = {
+        'name': chart
+    }
+    return JsonResponse(data)
+

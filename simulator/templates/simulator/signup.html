@@ -28,11 +28,12 @@
 		<div class="flex-item2">
 
 
-		  <form method="post">
+		<form method="post">
 			{% csrf_token %}
 			{{ form.as_p }}
 			<button type="submit">Sign up</button>
-		  </form>
+		</form>
+
 		  
 	</div>
 
@@ -41,7 +42,7 @@
 	  var username = $(this).val();
 
 	  $.ajax({
-		url: '/ajax/validate_username/',
+		url: 'ajax/validate_username',
 		data: {
 		  'username': username
 		},
@@ -55,6 +56,7 @@
 
 	});
 	</script>
+
 		  
 		  
 		  
