@@ -168,8 +168,8 @@ div.flex-container {
     display: -webkit-flex;
     display: flex;  
 
-    width: 100%;
-    height: 100%;
+    width: 80%;
+    height: 60%;
 }
 
 div.flex-item1 {
@@ -178,8 +178,8 @@ div.flex-item1 {
 }
 
 div.flex-item2 {
-    width: 600px;
-
+    width: 100%;
+    height: 100%;
 }
 
 

@@ -31,8 +31,18 @@
 				<table>
 					<tr> 
 						<th>Building name</th>
-						<td><input class="ver2"; type="text" name="name" value="name"/></td>
+						<td><input class="ver2" type="text" name="name" value="name"/></td>
 					</tr>
+                    <tr>
+                        <th>Building type</th>
+                        <td>
+                            <select name="buildingtype">
+                                {% for b_type in building_types %}
+                                    <option style='width:300px;' value={{ b_type.id }}>{{ b_type.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                    </tr>
 					<tr> 
 						<th>Floors number</th>
 						<td><input class="ver2" type="number" name="floors" min="2" max="99" value="11"/></td>

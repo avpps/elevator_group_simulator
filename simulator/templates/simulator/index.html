@@ -96,13 +96,17 @@ function closeNav() {
 			<td style="padding: 0px;width:10px">
 			
 				<ul>
-				<button type="button" id='delsim{{ building.id }}' class="ver1" onclick="show('sim{{ building.id }}')">delete</button>
+				<button type="button" id='delsim{{ building.id }}' class="ver1" 
+                        onclick="show('sim{{ building.id }}')">delete</button>
 				
-				<button type="button" id='cansim{{ building.id }}' class="ver2" style="display:none" onclick="hide('sim{{ building.id }}')">cancel</button>
+				<button type="button" id='cansim{{ building.id }}' class="ver2" 
+                        style="display:none" onclick="hide('sim{{ building.id }}')">cancel</button>
 				
 				<form action="{% url 'simulator:deleteBuilding' %}" method="post">
 				{% csrf_token %}
-					<button id="consim{{ building.id }}" class="ver1" style="display:none" name="del" value="{{ building.id }}" >delete</button>
+					<button id="consim{{ building.id }}" class="ver1" style="display:none" 
+                            name="del" value="{{ building.id }}" >delete</button>
+
 				</form>
 				</ul>			
 			
@@ -129,41 +133,32 @@ function closeNav() {
 		<tr> 
 			<th>Id</th>
 			<th>Building</th>
+            <th>Rating</th>
 			<th>Arr Rate</th>
 			<th><abbr title="Passengers avarage waiting time">AWT</abbr></th>
+            <th><abbr title="Passengers avarage cars interval">AINT</abbr></th>
 			<th><abbr title="Passengers avarage time to destination">ATTD</abbr></th>
 			<th><abbr title="Avarage cars load factor">ACLF</abbr></th>
 			<th>Calculation date</th>
 		</tr>
 	{% for simulation in simulations_list %}
 		<tr>
-		
 			<td>
-
-
-
-			<form action="{% url 'simulator:simulationStat' %}" method="post">
-			{% csrf_token %}
-				<button class="ver2" name="chartRequest1" value="{{ simulation.id }}" >{{ simulation.id }}</button>
-			</form>
-
-			
+			    <form action="{% url 'simulator:simulationStat' %}" method="post">
+			    {% csrf_token %}
+				    <button class="ver2" name="chartRequest1" value="{{ simulation.id }}" >{{ simulation.id }}</button>
+			    </form>
 			</td>
-			<td>{{ simulation.building.id }}</td>
-			<td>{{ simulation.arrivalRate }}</td>
+			<td>{{ simulation.building.name }}</td>
+        {% for aaaa in simulation.statsimulationsummary_set.all %}
+            <td>{{ aaaa.rating }}</td>
+			<td>{{ aaaa.AR }}</td>
+			<td>{{ aaaa.AWT }}</td>
+            <td>{{ aaaa.AINT }}</td>
+			<td>{{ aaaa.ATTD }}</td>
+			<td>{{ aaaa.ACLF }}</td>
+        {% endfor %}
 
-			<td>{% for aaaa in simulation.statsimulation_set.all %}
-					{{ aaaa.AWT }}
-				{% endfor %}
-			</td>
-			<td>{% for aaaa in simulation.statsimulation_set.all %}
-					{{ aaaa.ATTD }}
-				{% endfor %}
-			</td>
-			<td>{% for aaaa in simulation.statsimulation_set.all %}
-					{{ aaaa.ACLF }}
-				{% endfor %}
-			</td>			
 			<td id="datecolumn">{{ simulation.date }}</td>
 			<td style="padding: 0px;width:10px">
 				<ul>
@@ -206,6 +201,7 @@ function hide(a) {
 function deleteapproval() {
     confirm("Delete?");
 }
+
 </script>
 
 </body>

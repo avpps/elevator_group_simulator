@@ -1,0 +1,13 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\groupsimulator",
+    "\\simulator",
+    "\\simulator\\static",
+    "\\simulator\\static\\simulator",
+    "\\simulator\\templates",
+    "\\simulator\\templates\\simulator"
+  ],
+  "SelectedNode": "\\simulator\\views.py",
+  "PreviewInSolutionExplorer": false
+}

@@ -4,16 +4,21 @@ from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import Group
 
+
+
 class StandardUsers(Group):
+
     pass
-    
-    
 
+class BuildingTypes(models.Model):
 
-    
+    name = models.CharField(max_length=200, default=0)
+     
 class Building(models.Model):
     date = models.DateTimeField(default=timezone.now, blank=True)
     name = models.CharField(max_length=200)
+    b_type = models.ForeignKey(BuildingTypes, on_delete=models.CASCADE)
+    author = models.CharField(max_length=200, default='') 
     floors = models.IntegerField(default=9)
     floor_dist = models.FloatField(default=3)
     population = models.IntegerField(default=50)
@@ -22,8 +27,6 @@ class Building(models.Model):
         permissions = (
             ("view_building", "Can see available buildings"),
         )
-
-    
 
 class BuildingFloors(models.Model):
     building = models.ForeignKey(Building, on_delete=models.CASCADE)
@@ -75,6 +78,17 @@ class StatSimulation(models.Model):
     ACLF = models.FloatField(default=0) 
 
 
+class StatSimulationSummary(models.Model):
+
+    simulation = models.ForeignKey(SimulationDetails, on_delete=models.CASCADE)
+
+    rating = models.CharField(max_length=200, default=0)
+    AR = models.FloatField(default=0)
+    AWT = models.FloatField(default=0)
+    AINT = models.FloatField(default=0)
+    ATTD = models.FloatField(default=0)
+    ACLF = models.FloatField(default=0)
+
 class StatPassengers(models.Model):
 
     simulation = models.ForeignKey(SimulationDetails, on_delete=models.CASCADE)
@@ -111,8 +125,19 @@ class CarRunDetails(models.Model):
     departure = models.FloatField() 
     INT = models.FloatField()
     load = models.IntegerField()
-    
 
+
+    
+class Requirements(models.Model):
+
+    building_type = models.ForeignKey(BuildingTypes, on_delete=models.CASCADE)
+
+    rating = models.CharField(max_length=200, default=0)
+    AR = models.FloatField()
+    AWT = models.FloatField()
+    AINT = models.FloatField()
+    ATTD = models.FloatField()
+    ACLF = models.FloatField()
     
 
 

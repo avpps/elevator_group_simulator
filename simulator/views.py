@@ -19,13 +19,15 @@ from . import stat_db_run
 
 from .models import Building, BuildingFloors, BuildingGroup, SimulationDetails
 from .models import StatSimulation, StatPassengers, StatCars, SimulationRunDetails
-from .models import CarRunDetails, SimulationSteps
-
+from .models import CarRunDetails, SimulationSteps, BuildingTypes, StatSimulationSummary
+from .models import Requirements
 
 
 def indexView(request):
     buildings_list = Building.objects.order_by('-id')[:15]
     simulations_list = SimulationDetails.objects.order_by('-id')[:15]
+
+
 
     return render(request, 'simulator/index.html',
                   {'buildings_list':buildings_list,
@@ -33,51 +35,66 @@ def indexView(request):
 
 
 def newBuilding(request):
-    return render(request, 'simulator/newbuilding.html')
+
+    building_types = BuildingTypes.objects.all()
+
+    return render(request, 'simulator/newbuilding.html',
+                  {'building_types':building_types})
 
 @login_required(login_url='simulator:signIn')
 def addNewBuilding(request):
     try:
         name=request.POST['name']
+        b_type=get_object_or_404(BuildingTypes, pk=request.POST['buildingtype'])
         floors=request.POST['floors']
         floor_dist=request.POST['floor_dist']
         population=request.POST['population']
         
-        Building.objects.create(date = timezone.now(),
-                                name=name,
-                                floors=floors,
-                                floor_dist=floor_dist,
-                                population=population,)
+        Building.objects.create(
+            date = timezone.now(),
+            name=name,
+            b_type=b_type,
+            floors=floors,
+            floor_dist=floor_dist,
+            population=population,
+        )
 
         namelist = Building.objects.order_by('id')
         building_id = namelist[len(namelist)-1].id
         building = get_object_or_404(Building, pk=building_id)
 
         for i in range(1, int(floors)+1):
-            BuildingFloors.objects.create(building=building,
-                                          local_id=i,
-                                          name=i,
-                                          interfloor=floor_dist,
-                                          population=population,
-                                          entry=0,)
+            BuildingFloors.objects.create(
+                building=building,
+                local_id=i,
+                name=i,
+                interfloor=floor_dist,
+                population=population,
+                entry=0,
+            )
             
-        BuildingGroup.objects.create(building=building,
-                                      carsNumber=request.POST['carsNumber'],
-                                      speed=request.POST['speed'],
-                                      acceleration=request.POST['acceleration'],
-                                      jerk=request.POST['jerk'],
-                                      carCapacity=request.POST['carCapacity'],
-                                      passengerTransferTime=request.POST['passengerTransferTime'],
-                                      doorOpeningTime=request.POST['doorOpeningTime'],
-                                      doorClosingTime=request.POST['doorClosingTime'],
-                                      )
+        BuildingGroup.objects.create(
+            building=building,
+            carsNumber=request.POST['carsNumber'],
+            speed=request.POST['speed'],
+            acceleration=request.POST['acceleration'],
+            jerk=request.POST['jerk'],
+            carCapacity=request.POST['carCapacity'],
+            passengerTransferTime=request.POST['passengerTransferTime'],
+            doorOpeningTime=request.POST['doorOpeningTime'],
+            doorClosingTime=request.POST['doorClosingTime'],
+        )
+
         SumsBuil = BuildingFloors.objects.filter(building=building).aggregate(Sum('population'), Sum('interfloor'))
 
-        Building.objects.filter(pk=building_id).update(population=SumsBuil['population__sum'],
-                                                    floor_dist=SumsBuil['interfloor__sum'],)
+        Building.objects.filter(pk=building_id).update(
+            population=SumsBuil['population__sum'],
+            floor_dist=SumsBuil['interfloor__sum'],
+        )
 
     except ValueError:
-        return render(request, 'simulator/newbuilding.html')
+        print('-------------', b_type )
+        return HttpResponseRedirect(reverse('simulator:newBuilding'))
     else:
         return HttpResponseRedirect(reverse('simulator:newBuildingDetails'))
 
@@ -341,6 +358,7 @@ def simulationRun(request):
                                       ATTD=round(AVGpassengers['TTD__avg'], 2),
                                       ACLF=round(AVGcars['ACLF__avg'], 2),)
 
+
         '''history_file.write('\n \n')'''
         
         '''stat_db_run.add_col_wt_ttd()
@@ -380,6 +398,55 @@ def simulationRun(request):
         stat_db_run.summarize()
 
         '''
+
+
+
+    def reports_generator_summary():
+        ''' module for create StatSimulationSummary object '''
+        ''' with refference to Requirements obj '''
+
+        # take Requirements dedicated to certain building:
+
+        building_type = simulation_object.building.b_type
+        requirements_objects = Requirements.objects.filter(building_type=building_type).order_by('-rating')
+
+        # take all steps StatSimulation for certain simulation:
+
+        steps_summary_objects = simulation_object.statsimulation_set.all().order_by('-step')
+
+        # compare booth and save StatSimulationSummary object:
+
+        for step in steps_summary_objects:
+            stop = False
+            for reqirement in requirements_objects:
+
+                if (step.step <= reqirement.AR
+                    and step.AWT <= reqirement.AWT
+                    and step.ATTD <= reqirement.ATTD
+                    and step.ACLF <= reqirement.ACLF):
+                    
+                    StatSimulationSummary.objects.create(
+                        
+                        simulation = simulation_object,
+                        rating = reqirement.rating,
+
+                        AR = step.step,
+                        AWT = step.AWT,
+                        AINT = step.AINT,
+                        ATTD = step.ATTD,
+                        ACLF = step.ACLF,
+                    )
+                    stop = True
+                    break
+
+                else:
+                    continue
+            if stop:
+                break
+
+
+
+
         
       
     class Passenger():
@@ -745,7 +812,8 @@ def simulationRun(request):
 
         reports_generator()
         
-    
+    reports_generator_summary()
+
     return HttpResponseRedirect(reverse('simulator:index'))
 
     '''
