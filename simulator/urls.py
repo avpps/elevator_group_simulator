@@ -3,11 +3,6 @@ from django.contrib import admin
 
 from . import views
 
-from jchart.views import ChartView
-
-summary_chart_parameterized = views.SummaryChartParameterized()
-test_chart = views.TestChart()
-
 app_name = 'simulator'
 urlpatterns = [
     url(r'^$', views.indexView, name='index'),
@@ -29,6 +24,11 @@ urlpatterns = [
         name='deleteSimulation'),
     url(r'^simulationstat/$', views.simulationStat,
         name='simulationStat'),
+    url(r'^simulationstat/ajax/simulationsRequest/$', views.simulationsRequest,
+        name='simulationsRequest'),
+    url(r'^simulationstat/ajax/chartRequest/$', views.chartRequest,
+        name='chartRequest'),
+    
     url(r'^signup/$', views.SignUpView.as_view(),
         name='signup'),
     url(r'^signup/ajax/validate_username/$', views.validate_username,
@@ -39,14 +39,8 @@ urlpatterns = [
         name='signInRun'),
     url(r'^logout/$', views.logOut,
         name='logOut'),
-    url(r'^summarychartparameterized/(?P<simulation_id>[0-9]+)/$',
-        ChartView.from_chart(summary_chart_parameterized),
-        name='summary_chart_parameterized'),
-    url(r'^testchart/(?P<value>[0-9]+)/$',
-        ChartView.from_chart(test_chart),
-        name='test_chart'),
-    url(r'^simulationstat/ajax/generateChart/$', views.generateChart,
-        name='generateChart'),
+    
+
 
 ]
 

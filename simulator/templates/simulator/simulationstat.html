@@ -6,7 +6,6 @@
 </head>
 
 {% load static %}
-{% load jchart %}
 
 <link rel="stylesheet" type="text/css" href="{% static 'simulator/style.css' %}" />
 
@@ -28,71 +27,155 @@
 	
 		<div class="flex-item1">
 		<nav class="vertical-menu">
-			<form action="{% url 'simulator:simulationStat' %}" method="post">
-				{% csrf_token %}
-				{% for no in charts_number %}
-					<select id="chartRequest{{ forloop.counter }}" name="chartRequest{{ forloop.counter }}">
-					{% for sim in simulation_list %}
-						<option style='width:150px;' value={{ sim.id }}>{{ sim.id }}</option>
+			{% for no in charts_number %}
+				<select id="simulationsRequest{{ no }}">
+						<option style='width:150px;' value=None>building {{ no }}</option>
+					{% for building in buildings_list %}
+						<option style='width:150px;' value={{ building.id }}>{{ building.id }} {{ building.name }}</option>
 					{% endfor %}
-					</select>
-				{% endfor %}
-				<input class='ver2' type="submit" value="Show" />
-			</form>
+				</select>
+
+				<select id="chartRequest{{ forloop.counter }}">
+				</select>
+
+				<br>
+				<br>
+				<br>
+			{% endfor %}
 			
 		</nav>
 		</div>
 
 		<div class="flex-item2">
-		
-			<p id= 'p1'>123</p>
-			<p id= 'p2'></p>
-			<p id= 'p3'></p>
-
 			
-			{{ line_chart1.as_html }}
-			<!--
-			{{ line_chart2.as_html }}
-			{{ line_chart3.as_html }}
-			
-			{% for sim in simulation_list %}
-				{% render_chart 'simulator:summary_chart_parameterized' sim.id %}
-			{% endfor %}		
-	
-			{% render_chart 'simulator:summary_chart_parameterized' 203 %}
-			{% render_chart 'simulator:test_chart' 5 %}
-			-->
-			
+			{% for no in charts_number %}
+				<p id="p_chart{{no}}">
+				<canvas id="myChart{{no}}" width=100% height=75%></canvas>
+				</p>
+			{% endfor %}
 			
 		</div>
 		
 	</div>
+	
+	
 	<script src="https://code.jquery.com/jquery-3.1.0.min.js"></script>
 	<script src="{% static 'js/app.js' %}"></script>
 	
-	<script>
+	{% for no in charts_number %}
+		<script>
+			
+		$('#simulationsRequest'+{{no}}).change(function () {
+			var building_id = $(this).val();
 
-	$('#chartRequest1').change(function () {
+			$.ajax({
+				url: 'ajax/simulationsRequest',
+				data: {
+				  'building_id': building_id
+				},
+				dataType: 'json',
+				success: function (data) {
+					content = "";
+					temp = "<option style='width:150px;' value=val>val</option>"
+					sim_dict = data.simulation_list;
+					content += temp.replace(/val/g, 'simulation');
+					for(var key in sim_dict) {
+						content += temp.replace(/val/g, sim_dict[key]);
+					}
+					document.getElementById("chartRequest"+{{no}}).innerHTML = content
+				}
+			});
+		});
 
-		var simulation_id = $(this).val();
-		console.log( simulation_id );
-		
-		document.getElementById('p1').innerHTML = simulation_id;
+		$('#chartRequest'+{{no}}).change(function () {
+			
+			var simulation_id = $(this).val();
+			
+			//reset canvas before draw new chart:
+			$('#myChart'+{{no}}).remove();
+			$('#p_chart'+{{no}}).append('<canvas id="myChart{{no}}" width=100% height=75%></canvas>');
+			
+			$.ajax({
+				url: 'ajax/chartRequest',
+				data: {
+				  'simulation_id': simulation_id
+				},
+				dataType: 'json',
+				
+				success: function (data) {
+				
+					var myChart=null;
+					
+					if(myChart!=null){
+						myChart.destroy();
+						console.log('destr');
+					}
+					
+					var ctx = document.getElementById("myChart"+{{no}}).getContext('2d');
+					
+					myChart = new Chart(ctx, {
+						type: 'scatter',
+						data: {
+							datasets: [{
+								label: 'AWT',
+								data: data.AWT,
+								fill: false,
+								borderColor: 'rgb(255, 0, 0)',
 
-		$.ajax({
-			url: 'ajax/generateChart',
-			data: {
-			  'simulation_id': simulation_id
-			},
-			dataType: 'json',
-			success: function (data) {
-			  alert(data.name);
-			}
+							},
+										{
+								label: 'ATTD',
+								data: data.ATTD,
+								fill: false,
+								borderColor: 'rgb(255, 191, 0)',
+
+
+							},
+										{
+								label: 'AINT',
+								data: data.AINT,
+								fill: false,
+								borderColor: 'rgb(0, 255, 0)',
+
+							},
+										{
+								label: 'ACLF',
+								data: data.ACLF,
+								fill: false,
+								borderColor: 'rgb(64, 0, 255)',
+
+							}],							
+						},
+						options: {
+							scales: {
+								
+								xAxes: [{
+									ticks: {
+										type: 'linear',
+										position: 'bottom',
+									},
+								}],
+								yAxes: [{
+									ticks: {
+										beginAtZero: true,
+									},
+								}]
+							},
+							animation: {
+								duration: 10
+							}
+						},
+					});	
+				}
+			});
+
 		});
 		
-	});
 
-	</script>
+		</script>	
+	{% endfor %}
+
+	
 
 
 </body>

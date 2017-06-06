@@ -3,8 +3,6 @@ from django.urls import reverse
 from django.http import HttpResponseRedirect, HttpResponse
 from django.utils import timezone
 from django.db.models import Avg, Sum
-from jchart import Chart
-from jchart.config import Axes, DataSet, rgba
 
 from django.contrib.auth.decorators import login_required, permission_required
 
@@ -784,158 +782,53 @@ def simulationRun(request):
 
 def simulationStat(request, simulation_id=None):
 
-    charts_number = [1, 1, 1]
+    charts_number = 3
+    charts_number_list = [i for i in range(1, charts_number+1)]
+
+    #only buildings with any simulation just done
+    buildings_list = list(set([x.building for x in SimulationDetails.objects.all()]))
     
-    simulation_list = SimulationDetails.objects.all().order_by('-id')
-    summary_chart_parameterized = SummaryChartParameterized()
-     
-    try:
-        simulation_id1 = request.POST['chartRequest1']
-        simulation_id2 = request.POST['chartRequest2']
-        simulation_id3 = request.POST['chartRequest3']
-        chart1=SummaryChart()
-        chart2=SummaryChart()
-        chart3=SummaryChart()
-        chart1.simulation_id=simulation_id1
-        chart2.simulation_id=simulation_id2
-        chart3.simulation_id=simulation_id3
-        chart1.title = {'display': True, 'text': simulation_id1, 'fontSize': 25, 'position': 'right' }
-        chart2.title = {'display': True, 'text': simulation_id2, 'fontSize': 25, 'position': 'right' }
-        chart3.title = {'display': True, 'text': simulation_id3, 'fontSize': 25, 'position': 'right' }
-        
-        return render(request, 'simulator/simulationstat.html',
-                      {'line_chart1':chart1,
-                       'line_chart2':chart2,
-                       'line_chart3':chart3,
-                       'simulation_list':simulation_list,
-                       'charts_number':charts_number,
-                       'summary_chart_parameterized':summary_chart_parameterized},)
-    except KeyError:
-        if simulation_id:
-            return render(request, 'simulator/simulationstat.html',
-                          {'simulation_list':simulation_list,
-                           'charts_number':charts_number,
-                           'summary_chart_parameterized':summary_chart_parameterized,},)        
-        else:
-            return render(request, 'simulator/simulationstat.html',
-                          {'simulation_list':simulation_list,
-                           'charts_number':charts_number,
-                           'summary_chart_parameterized':summary_chart_parameterized,},)
 
-class SummaryChart(Chart):
-    chart_type = 'line'
-    scales = {
-        'xAxes': [Axes(type='linear', position='bottom')],
+    return render(request, 'simulator/simulationstat.html',
+                  {'buildings_list':buildings_list,
+                   'charts_number':charts_number_list,},)
+
+
+def simulationsRequest(request):
+    building = get_object_or_404(Building, pk=request.GET.get('building_id', None))
+    simulation_list = [x.id for x in SimulationDetails.objects.filter(building=building).order_by('-id')]
+
+    data = {
+        'simulation_list': simulation_list
     }
-    layout = {
-        'padding': {
-            #'left': [100],
-            #'right': [0],
-            #'top': [0],
-            'bottom': [0],
-        }
+    return JsonResponse(data)
+
+
+def chartRequest(request):
+    simulation_object = get_object_or_404(SimulationDetails, pk=request.GET.get('simulation_id', None))
+    forchart=simulation_object.statsimulation_set.all()
+    forchartlist = [[],[],[],[],[]]
+    
+    for asdfgh in forchart:
+        forchartlist[0].append(asdfgh.step)
+        forchartlist[1].append(asdfgh.AWT)
+        forchartlist[2].append(asdfgh.ATTD)
+        forchartlist[3].append(asdfgh.AINT)
+        forchartlist[4].append(asdfgh.ACLF)
+   
+    AWT  = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[1])]
+    ATTD = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[2])]
+    AINT = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[3])]
+    ACLF = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[4])]
+
+    data = {
+        'AWT': AWT,
+        'ATTD': ATTD,
+        'AINT': AINT,
+        'ACLF': ACLF,
     }
+    return JsonResponse(data)
 
-    def get_datasets(self, **kwargs):
-
-        simulation_object = get_object_or_404(SimulationDetails, pk=self.simulation_id)
-
-        forchart=simulation_object.statsimulation_set.all()
-        forchartlist = [[],[],[],[],[]]
-        for asdfgh in forchart:
-            forchartlist[0].append(asdfgh.step)
-            forchartlist[1].append(asdfgh.AWT)
-            forchartlist[2].append(asdfgh.ATTD)
-            forchartlist[3].append(asdfgh.AINT)
-            forchartlist[4].append(asdfgh.ACLF)
-       
-        AWT = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[1])]
-        ATTD = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[2])]
-        AINT = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[3])]
-        ACLF = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[4])]
-        
-        return [DataSet(label='AWT_{a}'.format(a=self.simulation_id),
-                        color=(255, 0, 0),
-                        fill = False,
-                        data=AWT,),
-                DataSet(label='ATTD',
-                        color=(255, 191, 0),
-                        fill = False,
-                        data=ATTD,),
-                DataSet(label='AINT',
-                        color=(0, 255, 0),
-                        fill = False,
-                        data=AINT,),
-                DataSet(label='ACLF',
-                        color=(64, 0, 255),
-                        fill = False,
-                        data=ACLF,),]
-
-
-
-class SummaryChartParameterized(Chart):
-    chart_type = 'line'
-    scales = {
-        'xAxes': [Axes(type='linear', position='bottom')],
-    }
-    '''layout = {
-        'padding': {
-            'left': [100],
-            'right': [0],
-            'top': [0],
-            'bottom': [333],
-        }
-    }'''
-        
-    def get_datasets(self, simulation_id):
-
-        simulation_object = get_object_or_404(SimulationDetails, pk=simulation_id)
-
-        forchart=simulation_object.statsimulation_set.all()
-        forchartlist = [[],[],[],[],[]]
-        for asdfgh in forchart:
-            forchartlist[0].append(asdfgh.step)
-            forchartlist[1].append(asdfgh.AWT)
-            forchartlist[2].append(asdfgh.ATTD)
-            forchartlist[3].append(asdfgh.AINT)
-            forchartlist[4].append(asdfgh.ACLF)
-       
-        AWT = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[1])]
-        ATTD = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[2])]
-        AINT = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[3])]
-        ACLF = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[4])]
-        
-        return [DataSet(label='AWT_{a}'.format(a=simulation_id),
-                        color=(255, 0, 0),
-                        fill = False,
-                        data=AWT,),
-                DataSet(label='ATTD',
-                        color=(255, 191, 0),
-                        fill = False,
-                        data=ATTD,),
-                DataSet(label='AINT',
-                        color=(0, 255, 0),
-                        fill = False,
-                        data=AINT,),
-                DataSet(label='ACLF',
-                        color=(64, 0, 255),
-                        fill = False,
-                        data=ACLF,),]
-
-class TestChart(Chart):
-    chart_type = 'line'
-    scales = {
-        'xAxes': [Axes(type='linear', position='bottom')],
-    }
-        
-    def get_datasets(self, value):
-       
-        AWT = [{'x': 0, 'y': 0}, {'x': 1, 'y': value}]
-
-        return [DataSet(label='AWT',
-                        color=(255, 0, 0),
-                        fill = False,
-                        data=AWT,),]
 
 
 
@@ -982,7 +875,7 @@ def generateChart(request):
     chart.simulation_id=simulation_id
 
     data = {
-        'name': chart
+        'name': chart.chart_type
     }
     return JsonResponse(data)
 
