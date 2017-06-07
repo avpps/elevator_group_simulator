@@ -13,4 +13,6 @@ from django.core.wsgi import get_wsgi_application
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "groupsimulator.settings")
 
-application = get_wsgi_application()
+import static
+
+application = static.Cling(get_wsgi_application())
