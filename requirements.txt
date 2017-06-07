@@ -1,3 +1,4 @@
 Django==1.11.1
 django-chartjs==1.1
 simpy==3.0.10
+django-jchart==0.3.0
