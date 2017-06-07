@@ -11,7 +11,6 @@ from django.contrib.auth.decorators import login_required, permission_required
 import simpy
 import random
 import sqlite3
-import matplotlib.pyplot as plt 
 
 from . import stat_db_run
 
@@ -126,24 +125,30 @@ def addNewBuildingDetails(request):
     floors = building.floors
 
     for i in range(1, floors+1):
-        BuildingFloors.objects.filter(building=building).filter(local_id=i).update(name=request.POST['name{cd}'.format(cd=i)],
-                                                                                   interfloor=request.POST['floor_dist{cd}'.format(cd=i)],
-                                                                                   population=request.POST['population{cd}'.format(cd=i)],
-                                                                                   entry=request.POST['entry{cd}'.format(cd=i)],)
+        BuildingFloors.objects.filter(building=building).filter(local_id=i).update(
+            name=request.POST['name{cd}'.format(cd=i)],
+            interfloor=request.POST['floor_dist{cd}'.format(cd=i)],
+            population=request.POST['population{cd}'.format(cd=i)],
+            entry=request.POST['entry{cd}'.format(cd=i)],
+        )
 
-    BuildingGroup.objects.filter(building=building).update(carsNumber=request.POST['carsNumber'],
-                                                           speed=request.POST['speed'],
-                                                           acceleration=request.POST['acceleration'],
-                                                           jerk=request.POST['jerk'],
-                                                           carCapacity=request.POST['carCapacity'],
-                                                           passengerTransferTime=request.POST['passengerTransferTime'],
-                                                           doorOpeningTime=request.POST['doorOpeningTime'],
-                                                           doorClosingTime=request.POST['doorClosingTime'],)
+    BuildingGroup.objects.filter(building=building).update(
+        carsNumber=request.POST['carsNumber'],
+        speed=request.POST['speed'],
+        acceleration=request.POST['acceleration'],
+        jerk=request.POST['jerk'],
+        carCapacity=request.POST['carCapacity'],
+        passengerTransferTime=request.POST['passengerTransferTime'],
+        doorOpeningTime=request.POST['doorOpeningTime'],
+        doorClosingTime=request.POST['doorClosingTime'],
+    )
 
     SumsBuil = BuildingFloors.objects.filter(building=building).aggregate(Sum('population'), Sum('interfloor'))
 
-    Building.objects.filter(pk=building_id).update(population=SumsBuil['population__sum'],
-                                                floor_dist=SumsBuil['interfloor__sum'],)
+    Building.objects.filter(pk=building_id).update(
+        population=SumsBuil['population__sum'],
+        floor_dist=SumsBuil['interfloor__sum'],
+    )
     
     return HttpResponseRedirect(reverse('simulator:newBuildingDetails'))
 
@@ -166,14 +171,15 @@ def addSimulationDetails(request):
     arrivalRateStep=float(request.POST['arrivalRateStep'])
     arrivalRateEnd=float(request.POST['arrivalRateEnd'])
 
-    SimulationDetails.objects.create(date=timezone.now(),
-                                     building=building,
-                                     passengersArrivalTime=request.POST['passengersArrivalTime'],
-                                     arrivalRate=arrivalRate,
-                                     arrivalRateStep=arrivalRateStep,
-                                     arrivalRateEnd=arrivalRateEnd,
-                                     randomSeed=request.POST['randomSeed'],
-                                     )
+    SimulationDetails.objects.create(
+        date=timezone.now(),
+        building=building,
+        passengersArrivalTime=request.POST['passengersArrivalTime'],
+        arrivalRate=arrivalRate,
+        arrivalRateStep=arrivalRateStep,
+        arrivalRateEnd=arrivalRateEnd,
+        randomSeed=request.POST['randomSeed'],
+        )
     
     '''create steps table for running serial simulation:'''
     simulationslist = SimulationDetails.objects.order_by('id')
@@ -183,13 +189,17 @@ def addSimulationDetails(request):
     simulation = get_object_or_404(SimulationDetails, pk=simulation_id)
 
     '''write first step:'''
-    SimulationSteps.objects.create(simulation=simulation,
-                                   step=arrivalRate)
+    SimulationSteps.objects.create(
+        simulation=simulation,
+        step=arrivalRate,
+    )
     '''...and rests:'''
     while arrivalRate < arrivalRateEnd:
         arrivalRate += arrivalRateStep
-        SimulationSteps.objects.create(simulation=simulation,
-                                       step=arrivalRate)
+        SimulationSteps.objects.create(
+            simulation=simulation,
+            step=arrivalRate,
+        )
                                        
     return HttpResponseRedirect(reverse('simulator:simulationRun'))
 
@@ -350,13 +360,15 @@ def simulationRun(request):
         AVGcars = StatCars.objects.filter(simulation=simulation_object).aggregate(Avg('AINT'), Avg('ACLF'))
 
         
-        StatSimulation.objects.create(simulation=simulation_object,
-                                      step=arrivalRate,
+        StatSimulation.objects.create(
+            simulation=simulation_object,
+            step=arrivalRate,
                                       
-                                      AINT=round(AVGcars['AINT__avg'], 2),
-                                      AWT=round(AVGpassengers['WT__avg'], 2),
-                                      ATTD=round(AVGpassengers['TTD__avg'], 2),
-                                      ACLF=round(AVGcars['ACLF__avg'], 2),)
+            AINT=round(AVGcars['AINT__avg'], 2),
+            AWT=round(AVGpassengers['WT__avg'], 2),
+            ATTD=round(AVGpassengers['TTD__avg'], 2),
+            ACLF=round(AVGcars['ACLF__avg'], 2),
+        )
 
 
         '''history_file.write('\n \n')'''

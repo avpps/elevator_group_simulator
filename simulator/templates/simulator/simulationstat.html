@@ -27,6 +27,33 @@
 	
 		<div class="flex-item1">
 		<nav class="vertical-menu">
+
+            <p style='text-align:center'>Charts quantity</p>
+
+            <select id="chartsQuantity">
+                <option style='width:150px;' value=None>choose</option>
+                <option style='width:150px;' value=1>1</option>
+                <option style='width:150px;' value=2>2</option>
+                <option style='width:150px;' value=3>3</option>
+            </select>
+
+            <br>
+            <br>
+            <br>
+
+            <p style='text-align:center'>View style:</p>
+
+            <select id="viewStyle">
+                <option style='width:150px;' value='single'>single details</option>
+                <option style='width:150px;' value='comparison'>comparison</option>
+            </select>
+
+            <br>
+            <br>
+            <br>
+
+            <p style='text-align:center'>Choose details:</p>
+
 			{% for no in charts_number %}
 				<select id="simulationsRequest{{ no }}">
 						<option style='width:150px;' value=None>building {{ no }}</option>
@@ -48,10 +75,12 @@
 
 		<div class="flex-item2">
 			
+            <canvas id="comparisonChart" width=100% height=100%></canvas>
+
 			{% for no in charts_number %}
 				<p id="p_chart{{no}}">
                     <!-- change accordingly also in reffering script -->
-                    <canvas id="myChart{{no}}" width=100% height=75%></canvas>
+                    <canvas id="myChart{{no}}" width=100% height=0%></canvas>
 				</p>
 			{% endfor %}
 			
@@ -63,121 +92,144 @@
 	<script src="https://code.jquery.com/jquery-3.1.0.min.js"></script>
 	<script src="{% static 'js/app.js' %}"></script>
 	
+
+    <!-- response for simulation list reqest to put it into select objects -->
 	{% for no in charts_number %}
-		<script>
-			
-		$('#simulationsRequest'+{{no}}).change(function () {
-			var building_id = $(this).val();
+    <script>
 
-			$.ajax({
-				url: 'ajax/simulationsRequest',
-				data: {
-				  'building_id': building_id
-				},
-				dataType: 'json',
-				success: function (data) {
-					content = "";
-					temp = "<option style='width:150px;' value=val>val</option>"
-					sim_dict = data.simulation_list;
-					content += temp.replace(/val/g, 'simulation');
-					for(var key in sim_dict) {
-						content += temp.replace(/val/g, sim_dict[key]);
-					}
-					document.getElementById("chartRequest"+{{no}}).innerHTML = content
-				}
+            $('#simulationsRequest' + {{ no }}).change(function () {
+                var building_id = $(this).val();
+
+                $.ajax({
+                    url: 'ajax/simulationsRequest',
+                    data: {
+                        'building_id': building_id
+                    },
+                    dataType: 'json',
+                    success: function (data) {
+                        content = "";
+                        temp = "<option style='width:150px;' value=val>val</option>"
+                        sim_dict = data.simulation_list;
+                        content += temp.replace(/val/g, 'simulation');
+                        for (var key in sim_dict) {
+                            content += temp.replace(/val/g, sim_dict[key]);
+                        }
+                        document.getElementById("chartRequest" + {{no }}).innerHTML = content
+            }
 			});
 		});
-
-		$('#chartRequest'+{{no}}).change(function () {
-			
-			var simulation_id = $(this).val();
-			
-			//reset canvas before draw new chart:
-			$('#myChart'+{{no}}).remove();
-			$('#p_chart'+{{no}}).append('<canvas id="myChart{{no}}" width=100% height=75%></canvas>');
-			
-			$.ajax({
-				url: 'ajax/chartRequest',
-				data: {
-				  'simulation_id': simulation_id
-				},
-				dataType: 'json',
-				
-				success: function (data) {
-				
-					var myChart=null;
-					
-					if(myChart!=null){
-						myChart.destroy();
-						console.log('destr');
-					}
-					
-					var ctx = document.getElementById("myChart"+{{no}}).getContext('2d');
-					
-					myChart = new Chart(ctx, {
-						type: 'scatter',
-						data: {
-							datasets: [{
-								label: 'AWT',
-								data: data.AWT,
-								fill: false,
-								borderColor: 'rgb(255, 0, 0)',
-
-							},
-										{
-								label: 'ATTD',
-								data: data.ATTD,
-								fill: false,
-								borderColor: 'rgb(255, 191, 0)',
+    </script>
+    {% endfor %}
 
 
-							},
-										{
-								label: 'AINT',
-								data: data.AINT,
-								fill: false,
-								borderColor: 'rgb(0, 255, 0)',
 
-							},
-										{
-								label: 'ACLF',
-								data: data.ACLF,
-								fill: false,
-								borderColor: 'rgb(64, 0, 255)',
+    <!-- response for data reqest to put it into charts into canvas objects -->
+    
+    <script>
+        {% for no in charts_number %}
+        $('#chartRequest' + {{ no }}).change(function () {
+            var simulation_id = $(this).val();
+            //reset canvas before draw new chart:
+            $('#myChart' + {{ no }}).remove();
+            $('#p_chart' + {{ no }}).append('<canvas id="myChart{{no}}" width=100% height=50%></canvas>');
 
-							}],							
-						},
-						options: {
-							scales: {
-								
-								xAxes: [{
-									ticks: {
-										type: 'linear',
-										position: 'bottom',
-									},
-								}],
-								yAxes: [{
-									ticks: {
-										beginAtZero: true,
-									},
-								}]
-							},
-							animation: {
-								duration: 10
-							}
-						},
-					});	
-				}
+            $.ajax({
+                url: 'ajax/chartRequest',
+                data: {
+                    'simulation_id': simulation_id
+                },
+                dataType: 'json',
+                success: function (data) {
+                    var view_style = $('#viewStyle').val();
+                    if (view_style == 'single') {
+                        createNewChartSingle(data, "myChart" + {{ no }});
+                    };
+
+                },
 			});
-
 		});
+        {% endfor %}
+
+    </script>
+
+    <script>
+
+        $('#chartsQuantity').change(function () {
+            console.log('adsdadsadasda');
+            $('#comparisonChart').data.datasets.forEach((dataset) => {
+                dataset.data.push("{ 'x': 0, 'y': 0 }, { 'x': 15, 'y': 500 },")
+            });
+            $('#comparisonChart').update();
+
+        })
+    </script>
 		
 
-		</script>	
-	{% endfor %}
+    <!-- generate chart into specified canvas object -->
+    <script>
+        function createNewChartSingle(data, position_id) {
+            createNewChart(data, position_id);
+        };
 
-	
+        function createNewChartComparison(data, position_id) {
+            createNewChart(data, position_id);
+        };
 
+
+        function createNewChart(data, position_id) {
+            var ctx = document.getElementById(position_id).getContext('2d');
+            myChart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'AWT',
+                        data: data.AWT,
+                        fill: false,
+                        borderColor: 'rgb(255, 0, 0)',
+                    },
+                    {
+                        label: 'ATTD',
+                        data: data.ATTD,
+                        fill: false,
+                        borderColor: 'rgb(255, 191, 0)',
+                    },
+                    {
+                        label: 'AINT',
+                        data: data.AINT,
+                        fill: false,
+                        borderColor: 'rgb(0, 255, 0)',
+                    },
+                    {
+                        label: 'ACLF',
+                        data: data.ACLF,
+                        fill: false,
+                        borderColor: 'rgb(64, 0, 255)',
+                    }],
+                },
+                options: {
+                    scales: {
+                        xAxes: [{
+                            ticks: {
+                                type: 'linear',
+                                position: 'bottom',
+                            },
+                        }],
+                        yAxes: [{
+                            ticks: {
+                                beginAtZero: true,
+                            },
+                        }]
+                    },
+                    animation: {
+                        duration: 10
+                    }
+                },
+            });
+        }
+
+
+
+    </script>	
 
 </body>
 </html>
