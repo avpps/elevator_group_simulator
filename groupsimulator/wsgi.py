@@ -15,4 +15,4 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "groupsimulator.settings")
 
 import static
 
-application = static.Cling('/simulator/static')
+wsgi_app = static.Cling('/simulator/static')
