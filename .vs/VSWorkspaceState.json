@@ -2,12 +2,9 @@
   "ExpandedNodes": [
     "",
     "\\groupsimulator",
-    "\\simulator",
-    "\\simulator\\static",
-    "\\simulator\\static\\simulator",
-    "\\simulator\\templates",
+    "\\simulator\\static\\simulator\\plots",
     "\\simulator\\templates\\simulator"
   ],
-  "SelectedNode": "\\simulator\\views.py",
+  "SelectedNode": "\\groupsimulator\\wsgi.py",
   "PreviewInSolutionExplorer": false
 }
