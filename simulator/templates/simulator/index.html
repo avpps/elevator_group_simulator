@@ -80,7 +80,6 @@ function closeNav() {
 			<th>Travel</th>
 			<th>Population</th>
 			<th>Cars</th>
-			
 		</tr>
 	{% for building in buildings_list %}
 		<tr>
@@ -94,28 +93,15 @@ function closeNav() {
 				{% endfor %}
 			</td>
 			<td style="padding: 0px;width:10px">
-			
 				<ul>
-				<button type="button" id='delsim{{ building.id }}' class="ver1" 
-                        onclick="show('sim{{ building.id }}')">delete</button>
-				
-				<button type="button" id='cansim{{ building.id }}' class="ver2" 
-                        style="display:none" onclick="hide('sim{{ building.id }}')">cancel</button>
-				
+				<button type="button" id='delbud{{ building.id }}' class="ver1" onclick="show('bud{{ building.id }}')">delete</button>
+				<button type="button" id='canbud{{ building.id }}' class="ver2" style="display:none" onclick="hide('bud{{ building.id }}')">cancel</button>
 				<form action="{% url 'simulator:deleteBuilding' %}" method="post">
 				{% csrf_token %}
-					<button id="consim{{ building.id }}" class="ver1" style="display:none" 
-                            name="del" value="{{ building.id }}" >delete</button>
-
+					<button id="conbud{{ building.id }}" class="ver1" style="display:none" name="del" value="{{ building.id }}" >delete</button>
 				</form>
 				</ul>			
-			
-			
-			
-			
-
-			</td>
-			
+			</td>	
 		</tr>
 	{% endfor %}
 	</table>
@@ -162,16 +148,13 @@ function closeNav() {
 			<td id="datecolumn">{{ simulation.date }}</td>
 			<td style="padding: 0px;width:10px">
 				<ul>
-				<button type="button" id='delsim{{ simulation.id }}' class="ver1" 
-						onclick="show('sim{{ simulation.id }}')">delete</button>
+				<button type="button" id='delsim{{ simulation.id }}' class="ver1" onclick="show('sim{{ simulation.id }}')">delete</button>
 				
-				<button type="button" id='cansim{{ simulation.id }}' class="ver2" style="display:none" 
-						onclick="hide('sim{{ simulation.id }}')">cancel</button>
+				<button type="button" id='cansim{{ simulation.id }}' class="ver2" style="display:none" onclick="hide('sim{{ simulation.id }}')">cancel</button>
 				
 				<form action="{% url 'simulator:deleteSimulation' %}" method="post">
 				{% csrf_token %}
-					<button id="consim{{ simulation.id }}" class="ver1" style="display:none" 
-							name="del" value="{{ simulation.id }}" >delete</button>
+					<button id="consim{{ simulation.id }}" class="ver1" style="display:none" name="del" value="{{ simulation.id }}" >delete</button>
 				</form>
 				</ul>
 			</td>
