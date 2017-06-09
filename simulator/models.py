@@ -2,7 +2,7 @@ import datetime
 
 from django.db import models
 from django.utils import timezone
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, User
 
 
 
@@ -18,7 +18,7 @@ class Building(models.Model):
     date = models.DateTimeField(default=timezone.now, blank=True)
     name = models.CharField(max_length=200)
     b_type = models.ForeignKey(BuildingTypes, on_delete=models.CASCADE)
-    author = models.CharField(max_length=200, default='') 
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
     floors = models.IntegerField(default=9)
     floor_dist = models.FloatField(default=3)
     population = models.IntegerField(default=50)

@@ -24,23 +24,25 @@ urlpatterns = [
         name='deleteSimulation'),
     url(r'^simulationstat/$', views.simulationStat,
         name='simulationStat'),
+
     url(r'^simulationstat/ajax/simulationsRequest/$', views.simulationsRequest,
         name='simulationsRequest'),
     url(r'^simulationstat/ajax/chartRequest/$', views.chartRequest,
         name='chartRequest'),
     
-    url(r'^signup/$', views.SignUpView.as_view(),
-        name='signup'),
-    url(r'^signup/ajax/validate_username/$', views.validate_username,
+    url(r'^signup/$', views.signUp,
+        name='signUp'),
+    url(r'^ajax/validate_username/$', views.validate_username,
         name='validate_username'),
+    url(r'^ajax/validateemail/$', views.validateEmail,
+        name='validateEmail'),
+    url(r'^ajax/validatepassword/$', views.validatePassword,
+        name='validatePassword'),
     url(r'^signin/$', views.signIn,
         name='signIn'),
     url(r'^signinrun/$', views.signInRun,
         name='signInRun'),
     url(r'^logout/$', views.logOut,
         name='logOut'),
-    
-
-
 ]
 

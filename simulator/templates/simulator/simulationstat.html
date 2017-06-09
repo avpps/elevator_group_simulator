@@ -1,27 +1,32 @@
-<!DOCTYPE html>
-<html>
 
-<head>
   <title>Simulator_stat</title>
-</head>
 
-{% load static %}
 
-<link rel="stylesheet" type="text/css" href="{% static 'simulator/style.css' %}" />
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.bundle.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
 
-<body>
 
-	<ul>
-		<li><a href="{% url 'simulator:index' %}">Home</a></li>
-		<li><a href="{% url 'simulator:newBuilding' %}">Create building</a></li>
-		<li><a href="{% url 'simulator:newBuildingDetails' %}">Building details</a></li>
-		<li><a href="{% url 'simulator:newSimulation' %}">Run simulation</a></li>
-		<li><a class="active" href="{% url 'simulator:simulationStat' %}">Statistics</a></li>
-		<li><a href="{% url 'simulator:signIn' %}">SignIn</a></li>
-	</ul>
+
+
+
+{% extends 'simulator/base.html' %}
+
+
+{% block initial_scripts %}
+
+<script>
+    $('#li_stat').attr('class', 'active');
+</script>
+
+{% endblock %}
+
+
+
+
+{% block content %}
+
+    {% load static %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
 	
 	<div class='flex-container'>
 	
@@ -231,5 +236,4 @@
 
     </script>	
 
-</body>
-</html>
+{% endblock %}

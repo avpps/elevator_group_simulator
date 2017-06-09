@@ -1,25 +1,18 @@
-<!DOCTYPE html>
-<html>
+{% extends 'simulator/base.html' %}
 
-<head>
-  <title>Simulator_new_simulation</title>
-</head>
 
-{% load static %}
-<link rel="stylesheet" type="text/css" href="{% static 'simulator/style.css' %}" />
+{% block initial_scripts %}
 
-<script type="text/javascript" src="{{ STATIC_URL }} /static/jquery-3.2.1.js"></script> 
+<script>
+    $('#li_ru_sim').attr('class', 'active');
+</script>
 
-<body>
+{% endblock %}
 
-	<ul>
-		<li><a href="{% url 'simulator:index' %}">Home</a></li>
-		<li><a href="{% url 'simulator:newBuilding' %}">Create building</a></li>
-		<li><a href="{% url 'simulator:newBuildingDetails' %}">Building details</a></li>
-		<li><a class="active" href="{% url 'simulator:newSimulation' %}">Run simulation</a></li>
-		<li><a href="{% url 'simulator:simulationStat' %}">Statistics</a></li>
-		<li><a href="{% url 'simulator:signIn' %}">SignIn</a></li>
-	</ul>
+
+
+
+{% block content %}
 
 	<div class='flex-container'>
 		
@@ -73,5 +66,5 @@
 			</form>
 		</div>
 	</div>
-</body>
-</html>
+
+{% endblock %}

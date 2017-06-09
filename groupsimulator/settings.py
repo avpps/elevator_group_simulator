@@ -78,8 +78,8 @@ WSGI_APPLICATION = 'groupsimulator.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'maingroupdb',
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'main_db',
         'USER': 'postgres',
         'PASSWORD': 'q',
         'HOST': 'localhost',

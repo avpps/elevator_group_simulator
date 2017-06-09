@@ -22,37 +22,57 @@ from .models import CarRunDetails, SimulationSteps, BuildingTypes, StatSimulatio
 from .models import Requirements
 
 
+from django.contrib.auth.forms import UserCreationForm
+from django.views.generic.edit import CreateView
+from django.contrib.auth.models import User
+from django.http import JsonResponse
+from django.contrib.auth import authenticate, login, logout
+
+
+
+
 def indexView(request):
-    buildings_list = Building.objects.order_by('-id')[:15]
-    simulations_list = SimulationDetails.objects.order_by('-id')[:15]
 
+    url_link = ''
+    user_name = request.user.username
+    user_id = request.user.id
 
+    buildings_list = Building.objects.filter(author=user_id).order_by('-id')[:15]
+    simulations_list = SimulationDetails.objects.filter(building__author__id=user_id).order_by('-id')[:15]
+    
 
     return render(request, 'simulator/index.html',
-                  {'buildings_list':buildings_list,
-                   'simulations_list':simulations_list,})
-
+                    {'buildings_list':buildings_list,
+                    'simulations_list':simulations_list,
+                    'user_name':user_name,
+                    'url_link':url_link,})
 
 def newBuilding(request):
+    url_link = 'newbuilding/'
 
     building_types = BuildingTypes.objects.all()
 
     return render(request, 'simulator/newbuilding.html',
-                  {'building_types':building_types})
+                  {'building_types':building_types,
+                   'url_link':url_link,})
 
 @login_required(login_url='simulator:signIn')
 def addNewBuilding(request):
+    user_id = request.user.id
     try:
         name=request.POST['name']
         b_type=get_object_or_404(BuildingTypes, pk=request.POST['buildingtype'])
+        author=get_object_or_404(User, pk=user_id)
         floors=request.POST['floors']
         floor_dist=request.POST['floor_dist']
         population=request.POST['population']
+
         
         Building.objects.create(
             date = timezone.now(),
             name=name,
             b_type=b_type,
+            author=author,
             floors=floors,
             floor_dist=floor_dist,
             population=population,
@@ -99,8 +119,9 @@ def addNewBuilding(request):
 
 
 def newBuildingDetails(request, building_id=None):
+    user_id = request.user.id
     
-    namelist = Building.objects.all().order_by('-id')
+    namelist = Building.objects.filter(author=user_id).order_by('-id')
 
     if building_id:
         building = get_object_or_404(Building, pk=building_id)
@@ -154,8 +175,9 @@ def addNewBuildingDetails(request):
 
 
 def newSimulation(request):
+    user_id = request.user.id
 
-    namelist = Building.objects.order_by('-id')
+    namelist = Building.objects.filter(author=user_id).order_by('-id')
 
     return render(request, 'simulator/newsimulationdetails.html',
                   {'building_list':namelist,})
@@ -860,13 +882,15 @@ def simulationRun(request):
     '''
 
 
+
 def simulationStat(request, simulation_id=None):
+    user_id = request.user.id
 
     charts_number = 3
     charts_number_list = [i for i in range(1, charts_number+1)]
 
     #only buildings with any simulation just done
-    buildings_list = list(set([x.building for x in SimulationDetails.objects.all()]))
+    buildings_list = list(set([x.building for x in SimulationDetails.objects.filter(building__author__id=user_id)]))
     
 
     return render(request, 'simulator/simulationstat.html',
@@ -909,16 +933,6 @@ def chartRequest(request):
     }
     return JsonResponse(data)
 
-
-
-
-from django.contrib.auth.forms import UserCreationForm
-from django.views.generic.edit import CreateView
-from django.contrib.auth.models import User
-from django.http import JsonResponse
-from django.contrib.auth import authenticate, login, logout
-
-
 class SignUpView(CreateView):
     template_name = 'simulator/signup.html'
     form_class = UserCreationForm
@@ -930,6 +944,39 @@ def validate_username(request):
         'is_taken': User.objects.filter(username__iexact=username).exists()
     }
     return JsonResponse(data)
+
+def validatePassword(request):
+    from django.contrib.auth.password_validation import validate_password
+    from django.core.exceptions import ValidationError
+    password = request.GET.get('password', None)
+    try:
+        result = validate_password(password)
+        data = {'is_valid': True}
+    except ValidationError:
+        data = {'is_valid': False}
+
+    return JsonResponse(data)
+
+def validateEmail(request):
+    from django.core.validators import validate_email
+    from django.core.exceptions import ValidationError
+    email = request.GET.get('email', None)
+    try:
+        validate_email(email)
+        data = {'is_valid': False}
+    except ValidationError:
+        data = {'is_valid': True}
+
+    return JsonResponse(data)
+
+def signUp(request):
+    name=request.POST['user_name']
+    mail=request.POST['user_mail']
+    password=request.POST['password1']
+
+    user = User.objects.create_user(name, mail, password)
+    return HttpResponseRedirect(reverse('simulator:index'))
+
 
 def signIn(request):
     return render(request, 'simulator/signin.html')
