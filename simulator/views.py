@@ -47,13 +47,16 @@ def indexView(request):
                     'user_name':user_name,
                     'url_link':url_link,})
 
+
 def newBuilding(request):
     url_link = 'newbuilding/'
+    user_name = request.user.username
 
     building_types = BuildingTypes.objects.all()
 
     return render(request, 'simulator/newbuilding.html',
                   {'building_types':building_types,
+                   'user_name':user_name,
                    'url_link':url_link,})
 
 @login_required(login_url='simulator:signIn')
@@ -119,6 +122,7 @@ def addNewBuilding(request):
 
 
 def newBuildingDetails(request, building_id=None):
+    user_name = request.user.username
     user_id = request.user.id
     
     namelist = Building.objects.filter(author=user_id).order_by('-id')
@@ -133,11 +137,13 @@ def newBuildingDetails(request, building_id=None):
 
         except KeyError:
             return render(request, 'simulator/newbuildingdetails.html',
-                          {'building_list':namelist},)
+                          {'building_list':namelist,
+                           'user_name':user_name,},)
         
     return render(request, 'simulator/newbuildingdetails.html',
                   {'building':building,
-                   'building_list':namelist},)
+                   'building_list':namelist,
+                   'user_name':user_name,},)
 
 @login_required(login_url='simulator:signIn')
 def addNewBuildingDetails(request):
@@ -175,12 +181,14 @@ def addNewBuildingDetails(request):
 
 
 def newSimulation(request):
+    user_name = request.user.username
     user_id = request.user.id
 
     namelist = Building.objects.filter(author=user_id).order_by('-id')
 
     return render(request, 'simulator/newsimulationdetails.html',
-                  {'building_list':namelist,})
+                  {'building_list':namelist,
+                   'user_name':user_name,})
 
 
 @login_required(login_url='simulator:signIn')
@@ -246,25 +254,6 @@ def deleteSimulation(request):
 
 
 def simulationRun(request):
-
-
-    '''
-        ELEVATOR GROUP SIMULATOR
-        
-    Process generally run like in nature :)
-    1  Building and population parameters (soon also rest) are defined in input database
-    2  Random passenger generator put them into process.
-    3  Simple control algorithm give elevators information where to go to serve passanger.
-       In future elevator control system will be based on dispathed allocations method.
-    4  During process run data are collected (e.g. passanger arrival time, actual elevator speed, passangers in lobby)  
-    5  When process end, data are saved to results database and evaluated to get final results 
-       which are needed to perform elevator group work general rating.
-       Also charts are generated to show how process parameters ran in time.
-    Under devleopment (in priority order):
-    1  Web site using Django working as user interface
-    2  Implement dispathed allocations method for group control
-    3  Process run visualization using probably https://www.panda3d.org/
-    '''
 
     def passengersArrival(env):
         while len(passengers_stat) <= passengerAll:
@@ -787,7 +776,7 @@ def simulationRun(request):
 
 
 
-    '''refering to certain simulation:'''
+    '''refering to certain (!last added!) simulation object:'''
     simulationslist = SimulationDetails.objects.order_by('id')
     simulation_position_on_list = len(simulationslist)-1
     simulation_id = simulationslist[simulation_position_on_list].id
@@ -884,6 +873,7 @@ def simulationRun(request):
 
 
 def simulationStat(request, simulation_id=None):
+    user_name = request.user.username
     user_id = request.user.id
 
     charts_number = 3
@@ -895,7 +885,8 @@ def simulationStat(request, simulation_id=None):
 
     return render(request, 'simulator/simulationstat.html',
                   {'buildings_list':buildings_list,
-                   'charts_number':charts_number_list,},)
+                   'charts_number':charts_number_list,
+                   'user_name':user_name,},)
 
 
 def simulationsRequest(request):

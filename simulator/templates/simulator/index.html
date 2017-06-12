@@ -22,7 +22,13 @@
     <link rel="stylesheet" type="text/css" href="{% static 'simulator/table1.css' %}" />
 
     <div style="overflow-x:auto;">
-    <h3>Last buildings:</h3>
+        <article>
+            <h3><a onclick="openNav('about', '50%')">Click <u>here</u> to check how it works</a></h3>       
+        </article>
+    
+
+
+    <h4>...your last buildings:</h4>
     {% if buildings_list %}
 	    <table class="index">
 		    <tr> 
@@ -64,7 +70,7 @@
 
     <div style="overflow-x:auto;">
 
-    <h3>Last simulations:</h3>
+    <h4>...your last simulations:</h4>
         {% if simulations_list %}
 	        <table>
 		        <tr> 
@@ -80,12 +86,7 @@
 		        </tr>
 	        {% for simulation in simulations_list %}
 		        <tr>
-			        <td>
-			            <form action="{% url 'simulator:simulationStat' %}" method="post">
-			            {% csrf_token %}
-				            <button class="ver2" name="chartRequest1" value="{{ simulation.id }}" >{{ simulation.id }}</button>
-			            </form>
-			        </td>
+			        <td>{{ simulation.id }}</td>
 			        <td>{{ simulation.building.name }}</td>
                 {% for aaaa in simulation.statsimulationsummary_set.all %}
                     <td>{{ aaaa.rating }}</td>

@@ -1,1 +1,1 @@
-web: gunicorn groupsimulator.wsgi --log-file=- onbytes.wsgi:application
+web: gunicorn groupsimulator.wsgi --log-file -
