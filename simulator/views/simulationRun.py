@@ -4,253 +4,14 @@ from django.http import HttpResponseRedirect, HttpResponse
 from django.utils import timezone
 from django.db.models import Avg, Sum
 
-from django.contrib.auth.decorators import login_required, permission_required
-
-######  for tests  ##########
-
 import simpy
 import random
 import sqlite3
 
-from . import stat_db_run
-
-######  _________  ##########
-
-from .models import Building, BuildingFloors, BuildingGroup, SimulationDetails
-from .models import StatSimulation, StatPassengers, StatCars, SimulationRunDetails
-from .models import CarRunDetails, SimulationSteps, BuildingTypes, StatSimulationSummary
-from .models import Requirements
-
-
-from django.contrib.auth.forms import UserCreationForm
-from django.views.generic.edit import CreateView
-from django.contrib.auth.models import User
-from django.http import JsonResponse
-from django.contrib.auth import authenticate, login, logout
-
-
-
-
-def indexView(request):
-
-    url_link = ''
-    user_name = request.user.username
-    user_id = request.user.id
-
-    buildings_list = Building.objects.filter(author=user_id).order_by('-id')[:15]
-    simulations_list = SimulationDetails.objects.filter(building__author__id=user_id).order_by('-id')[:15]
-    
-
-    return render(request, 'simulator/index.html',
-                    {'buildings_list':buildings_list,
-                    'simulations_list':simulations_list,
-                    'user_name':user_name,
-                    'url_link':url_link,})
-
-
-def newBuilding(request):
-    url_link = 'newbuilding/'
-    user_name = request.user.username
-
-    building_types = BuildingTypes.objects.all()
-
-    return render(request, 'simulator/newbuilding.html',
-                  {'building_types':building_types,
-                   'user_name':user_name,
-                   'url_link':url_link,})
-
-@login_required(login_url='simulator:signIn')
-def addNewBuilding(request):
-    user_id = request.user.id
-    try:
-        name=request.POST['name']
-        b_type=get_object_or_404(BuildingTypes, pk=request.POST['buildingtype'])
-        author=get_object_or_404(User, pk=user_id)
-        floors=request.POST['floors']
-        floor_dist=request.POST['floor_dist']
-        population=request.POST['population']
-
-        
-        Building.objects.create(
-            date = timezone.now(),
-            name=name,
-            b_type=b_type,
-            author=author,
-            floors=floors,
-            floor_dist=floor_dist,
-            population=population,
-        )
-
-        namelist = Building.objects.order_by('id')
-        building_id = namelist[len(namelist)-1].id
-        building = get_object_or_404(Building, pk=building_id)
-
-        for i in range(1, int(floors)+1):
-            BuildingFloors.objects.create(
-                building=building,
-                local_id=i,
-                name=i,
-                interfloor=floor_dist,
-                population=population,
-                entry=0,
-            )
-            
-        BuildingGroup.objects.create(
-            building=building,
-            carsNumber=request.POST['carsNumber'],
-            speed=request.POST['speed'],
-            acceleration=request.POST['acceleration'],
-            jerk=request.POST['jerk'],
-            carCapacity=request.POST['carCapacity'],
-            passengerTransferTime=request.POST['passengerTransferTime'],
-            doorOpeningTime=request.POST['doorOpeningTime'],
-            doorClosingTime=request.POST['doorClosingTime'],
-        )
-
-        SumsBuil = BuildingFloors.objects.filter(building=building).aggregate(Sum('population'), Sum('interfloor'))
-
-        Building.objects.filter(pk=building_id).update(
-            population=SumsBuil['population__sum'],
-            floor_dist=SumsBuil['interfloor__sum'],
-        )
-
-    except ValueError:
-        print('-------------', b_type )
-        return HttpResponseRedirect(reverse('simulator:newBuilding'))
-    else:
-        return HttpResponseRedirect(reverse('simulator:newBuildingDetails'))
-
-
-def newBuildingDetails(request, building_id=None):
-    user_name = request.user.username
-    user_id = request.user.id
-    
-    namelist = Building.objects.filter(author=user_id).order_by('-id')
-
-    if building_id:
-        building = get_object_or_404(Building, pk=building_id)
-
-    else:
-        try:
-            building_id = request.POST['building_request']
-            building = get_object_or_404(Building, pk=building_id)
-
-        except KeyError:
-            return render(request, 'simulator/newbuildingdetails.html',
-                          {'building_list':namelist,
-                           'user_name':user_name,},)
-        
-    return render(request, 'simulator/newbuildingdetails.html',
-                  {'building':building,
-                   'building_list':namelist,
-                   'user_name':user_name,},)
-
-@login_required(login_url='simulator:signIn')
-def addNewBuildingDetails(request):
-    building_id = request.POST['building_id']
-    building = get_object_or_404(Building, pk=building_id)
-    floors = building.floors
-
-    for i in range(1, floors+1):
-        BuildingFloors.objects.filter(building=building).filter(local_id=i).update(
-            name=request.POST['name{cd}'.format(cd=i)],
-            interfloor=request.POST['floor_dist{cd}'.format(cd=i)],
-            population=request.POST['population{cd}'.format(cd=i)],
-            entry=request.POST['entry{cd}'.format(cd=i)],
-        )
-
-    BuildingGroup.objects.filter(building=building).update(
-        carsNumber=request.POST['carsNumber'],
-        speed=request.POST['speed'],
-        acceleration=request.POST['acceleration'],
-        jerk=request.POST['jerk'],
-        carCapacity=request.POST['carCapacity'],
-        passengerTransferTime=request.POST['passengerTransferTime'],
-        doorOpeningTime=request.POST['doorOpeningTime'],
-        doorClosingTime=request.POST['doorClosingTime'],
-    )
-
-    SumsBuil = BuildingFloors.objects.filter(building=building).aggregate(Sum('population'), Sum('interfloor'))
-
-    Building.objects.filter(pk=building_id).update(
-        population=SumsBuil['population__sum'],
-        floor_dist=SumsBuil['interfloor__sum'],
-    )
-    
-    return HttpResponseRedirect(reverse('simulator:newBuildingDetails'))
-
-
-def newSimulation(request):
-    user_name = request.user.username
-    user_id = request.user.id
-
-    namelist = Building.objects.filter(author=user_id).order_by('-id')
-
-    return render(request, 'simulator/newsimulationdetails.html',
-                  {'building_list':namelist,
-                   'user_name':user_name,})
-
-
-@login_required(login_url='simulator:signIn')
-def addSimulationDetails(request):
-    
-    building_id = request.POST['building_id']
-    building = get_object_or_404(Building, pk=building_id)
-
-    arrivalRate=float(request.POST['arrivalRate'])
-    arrivalRateStep=float(request.POST['arrivalRateStep'])
-    arrivalRateEnd=float(request.POST['arrivalRateEnd'])
-
-    SimulationDetails.objects.create(
-        date=timezone.now(),
-        building=building,
-        passengersArrivalTime=request.POST['passengersArrivalTime'],
-        arrivalRate=arrivalRate,
-        arrivalRateStep=arrivalRateStep,
-        arrivalRateEnd=arrivalRateEnd,
-        randomSeed=request.POST['randomSeed'],
-        )
-    
-    '''create steps table for running serial simulation:'''
-    simulationslist = SimulationDetails.objects.order_by('id')
-    simulation_position_on_list = len(simulationslist)-1
-    simulation_id = simulationslist[simulation_position_on_list].id    
-        
-    simulation = get_object_or_404(SimulationDetails, pk=simulation_id)
-
-    '''write first step:'''
-    SimulationSteps.objects.create(
-        simulation=simulation,
-        step=arrivalRate,
-    )
-    '''...and rests:'''
-    while arrivalRate < arrivalRateEnd:
-        arrivalRate += arrivalRateStep
-        SimulationSteps.objects.create(
-            simulation=simulation,
-            step=arrivalRate,
-        )
-                                       
-    return HttpResponseRedirect(reverse('simulator:simulationRun'))
-
-
-@login_required(login_url='simulator:signIn')
-def deleteBuilding(request):
-
-    building_id = request.POST['del']
-    get_object_or_404(Building, pk=building_id).delete()
-
-    return HttpResponseRedirect(reverse('simulator:index'))
-
-
-@login_required(login_url='simulator:signIn')   
-def deleteSimulation(request):
-
-    simulation_id = request.POST['del']
-    get_object_or_404(SimulationDetails, pk=simulation_id).delete()
-
-    return HttpResponseRedirect(reverse('simulator:index'))
-
+from simulator.models import Building, BuildingFloors, BuildingGroup, SimulationDetails
+from simulator.models import StatSimulation, StatPassengers, StatCars, SimulationRunDetails
+from simulator.models import CarRunDetails, SimulationSteps, BuildingTypes, StatSimulationSummary
+from simulator.models import Requirements
 
 
 def simulationRun(request):
@@ -279,11 +40,12 @@ def simulationRun(request):
         buildingPopulation = 0
 
         for i in building_floors:
-            j = [i.local_id,
-                 i.name,
-                 i.interfloor,
-                 i.population,
-                 i.entry]
+            j = [
+                i.local_id,
+                i.name,
+                i.interfloor,
+                i.population,
+                i.entry]
             floorChartList.append(j)
             buildingPopulation += i.population
         
@@ -318,16 +80,17 @@ def simulationRun(request):
         for i, j in passengers_stat.items():
             WT = j.depTime - j.arrTime
             TTD = j.destTime - j.arrTime
-            StatPassengers.objects.create(simulation=simulation_object,
-                                          step=arrivalRate,
+            StatPassengers.objects.create(
+                simulation=simulation_object,
+                step=arrivalRate,
                                                                                     
-                                          local_id=j.id,
-                                          destFloor=round(j.destFloor, 2),
-                                          arrTime=round(j.arrTime, 2),
-                                          depTime=round(j.depTime, 2),
-                                          destTime=round(j.destTime, 2),
-                                          WT=round(WT, 2),
-                                          TTD=round(TTD, 2),)
+                local_id=j.id,
+                destFloor=round(j.destFloor, 2),
+                arrTime=round(j.arrTime, 2),
+                depTime=round(j.depTime, 2),
+                destTime=round(j.destTime, 2),
+                WT=round(WT, 2),
+                TTD=round(TTD, 2),)
             
         for i, j in cars_stat.items():
             SINT = 0
@@ -339,14 +102,15 @@ def simulationRun(request):
                     INT = j.carDepartures[k][0]
                 SINT += INT
                 SCLF += j.carDepartures[k][1]
-                CarRunDetails.objects.create(simulation=simulation_object,
-                                             step=arrivalRate,
-                                             car=j.id,
+                CarRunDetails.objects.create(
+                    simulation=simulation_object,
+                    step=arrivalRate,
+                    car=j.id,
 
-                                             local_id=j.id,
-                                             departure=round(j.carDepartures[k][0], 2),
-                                             INT=round(INT, 2),
-                                             load=j.carDepartures[k][1],)
+                    local_id=j.id,
+                    departure=round(j.carDepartures[k][0], 2),
+                    INT=round(INT, 2),
+                    load=j.carDepartures[k][1],)
 
             try:
                 AINT = SINT/(len(j.carDepartures))
@@ -359,16 +123,19 @@ def simulationRun(request):
                 ACLF = 0
                 
                 
-            StatCars.objects.create(simulation=simulation_object,
-                                    step=arrivalRate,
+            StatCars.objects.create(
+                simulation=simulation_object,
+                step=arrivalRate,
                                     
-                                    local_id=j.id,
-                                    AINT = round(AINT, 2),
-                                    ACLF = round(ACLF, 2),)
+                local_id=j.id,
+                AINT = round(AINT, 2),
+                ACLF = round(ACLF, 2),)
 
 
-        AVGpassengers = StatPassengers.objects.filter(simulation=simulation_object).aggregate(Avg('WT'), Avg('TTD'))            
-        AVGcars = StatCars.objects.filter(simulation=simulation_object).aggregate(Avg('AINT'), Avg('ACLF'))
+        AVGpassengers = StatPassengers.objects.filter(
+            simulation=simulation_object).aggregate(Avg('WT'), Avg('TTD'))            
+        AVGcars = StatCars.objects.filter(
+            simulation=simulation_object).aggregate(Avg('AINT'), Avg('ACLF'))
 
         
         StatSimulation.objects.create(
@@ -406,7 +173,6 @@ def simulationRun(request):
             sClf += j.avgClfValue
             Tc += 1
 
-        
 
         AVT = sVt / Tp
         ATTD = sTtd / Tp
@@ -421,8 +187,6 @@ def simulationRun(request):
         stat_db_run.summarize()
 
         '''
-
-
 
     def reports_generator_summary():
         ''' module for create StatSimulationSummary object '''
@@ -465,12 +229,7 @@ def simulationRun(request):
                 else:
                     continue
             if stop:
-                break
-
-
-
-
-        
+                break  
       
     class Passenger():
         # containing: ID, arr time, dep time, destTime
@@ -535,19 +294,21 @@ def simulationRun(request):
             self.passengerTransferTime = building_group.passengerTransferTime
             self.doorOpeningTime = building_group.doorOpeningTime
             self.doorClosingTime = building_group.doorClosingTime
+            # car start running at floor_id=0
             self.carPosition = 0
+            # absolute car position counted from floor_id=0 level
             self.carPositionDist = 0
+            # 
             self.carPositionDistSum = 0
-            
-            self.runTime = 2    # all interfloors are the same
-            
+            # car have capacity limit. This is limiter:                       
             self.carUsage = simpy.PriorityResource(env, capacity = self.carCapacity)
             #self.doorOpened = env.process(doorOpened(env))
             self.doorOpened_reactivate = env.event()
             
-            
+            # caches for simulation run:
             self.passengersInCar = []
             self.passengersInCarDest = []
+            # cache for statistics:
             self.carDepartures = []
             ''''''
             self.carMovement = [[],[],[],[]]
@@ -562,8 +323,6 @@ def simulationRun(request):
                 sClf += i[1]
             self.avgClfValue = sClf/T
 
-        
-            
         def putting_inside(self, env, passengersInCar1):
             history.append('%d      %s \n' % (env.now, list(self.just_inside)))
             for i in passengersInCar1:
@@ -579,84 +338,121 @@ def simulationRun(request):
             yield env.timeout(0)
 
         def runCar(self, env):
-            history.append('%d car %d generated \n' %(env.now, self.id))
+            history.append('%d car %d generated' %(env.now, self.id))
             while True:
+                # car start at floor_id=0:
                 self.carPosition = 0
                 self.carPositionDist = 0
                 self.carPositionDistSum = 0
                 carPositionDistSumForInterfloorRun = 0
                 self.doorOpenedMonit = env.process(self.doorOpened(env))
                 
-                if len(lobbyQueue)>0: history.append('%d car %d at floor 0. \n' % (env.now, self.id))
+                if len(lobbyQueue)>0: history.append(
+                    '%d car %d at floor %d' % (env.now, self.id, self.carPosition))
                 yield env.timeout(self.doorOpeningTime)
                 
                 if len(self.passengersInCar) > 0:
-                    # after loading make additional procedures (photocell delays, door close, etc...):
+                    # after loading make additional procedures 
+                    # (photocell delays, door close, etc...):
                     self.just_inside = []
-                       
-                    yield env.process(self.putting_inside(env, self.passengersInCar))
-                    
+                    yield env.process(
+                        self.putting_inside(env, self.passengersInCar))
+                    '''----for verification:----'''
                     self.carPosition = 0.5
-                    
-                    history.append('%d car %d at floor 0. Doors start closing. Passengers: %d %s. PassengersInCarDest: %s \n\n'
-                                  % (env.now, self.id, len(self.passengersInCar),
-                                     str(self.passengersInCar), str(self.passengersInCarDest)))
-                    
+                    history.append(
+                        '%d car %d at floor %d Doors start closing '
+                        'Passengers in car %s Car destinations %s'
+                        % (
+                            env.now,
+                            self.id,
+                            self.carPosition,
+                            str(self.passengersInCar),
+                            str(self.passengersInCarDest)))
                     self.doorOpened_reactivate.succeed()
                     self.doorOpened_reactivate = env.event()
-                    
                     yield env.timeout(self.doorClosingTime)
                     self.carDepartures.append([env.now, len(self.passengersInCar)])
-                    history.append('%d car %d leave floor 0. Doors are: %s \n'
-                          %(env.now, self.id, self.doorOpenedMonit.is_alive))
-                    
-                    yield env.timeout(0)    # additionl time for acceleration
+                    history.append(
+                        '%d car %d leave floor 0 Doors are %s'
+                        % (env.now,
+                           self.id,
+                           self.doorOpenedMonit.is_alive))
+                    # additional time for acceleration:
+                    yield env.timeout(0)    
                     ###history.append(env.now, '|' * len(lobbyQueue))
-                    for i in range(1, buildingFloorNumber+1):    # 'buildingFloorNumber+1' to be sure that below if will be checked also on top floor
+                    # 'buildingFloorNumber+1' to be sure that below 
+                    # 'if' statement will be checked also on top floor:
+                    for i in range(1, buildingFloorNumber+1):    
                         if len(self.passengersInCar) > 0:
-                            self.carPosition = i-0.5             # run for next floor, but it take a time
+                            # run for next floor, but it take a time:
+                            self.carPosition = i-0.5
                             self.carPositionDist += floorChartList[i][2]
                             self.carPositionDistSum += floorChartList[i][2]
-                            
                             if i in self.passengersInCarDest:
-                                yield env.process(self.motion(env, self.carPositionDist, carPositionDistSumForInterfloorRun, 1))
+                                yield env.process(
+                                    self.motion(
+                                        env,
+                                        self.carPositionDist,
+                                        carPositionDistSumForInterfloorRun,
+                                        1))
                                 self.carPosition = i
                                 self.carPositionDist = 0
                             else:
-                                history.append('%d car %d on landing %d. Nobody leave car. \n' % (env.now, self.id, i))
+                                history.append(
+                                    '%d car %d at landing %d '
+                                    'Nobody leave car'
+                                    % (
+                                        env.now,
+                                        self.id, 
+                                        i))
                                 continue
                         else:
-                            history.append('%d car %d go back \n' % (env.now, self.id))
+                            # when car is empty, go back to floor 0:
+                            history.append(
+                                '%d car %d go back'
+                                % (
+                                    env.now,
+                                    self.id))
                             self.carPosition = 0.5
-                            yield env.process(self.motion(env, self.carPositionDistSum, self.carPositionDistSum, -1))
-                            break                                          #when car is empty, go back to floor 0
+                            yield env.process(
+                                self.motion(
+                                    env,
+                                    self.carPositionDistSum,
+                                    self.carPositionDistSum,
+                                    -1))
+                            break
                         carPositionDistSumForInterfloorRun = self.carPositionDistSum
-                        
-                        # passengeer 'j' leave car but it take a time:
-                        for j in reversed(self.passengersInCar):           # reversed to avoid pass and dest lists position changes.
-                                                                           # thanks this, pass and dest are removed from right to left from list 
+                        # passengeer 'j' leave car but it take a time
+                        # (reversed to avoid pass and dest lists position 
+                        # changes. Thanks this, pass and dest are removed  
+                        # from right to left from list):
+                        for j in reversed(self.passengersInCar):                                            
                             if i == passengers_stat[j].destFloor:
                                 yield env.timeout(self.passengerTransferTime)
                                 passengers_stat[j].passengerUnloading_reactivate.succeed()
                                 passengers_stat[j].passengerUnloading_reactivate = env.event()
-                                
                                 self.wy = cars_stat[self.id].passengersInCar.index(j)
                                 cars_stat[self.id].passengersInCar.pop(self.wy)
                                 cars_stat[self.id].passengersInCarDest.pop(self.wy)
-                                history.append('%d car %d on landing %d. passenger %d leave car. Passengers in car: %s. PassengersInCarDest: %s \n'
-                                              % (env.now, self.id, i, passengers_stat[j].id,
-                                                 str(cars_stat[self.id].passengersInCar),
-                                                 str(self.passengersInCarDest)))
-                                
-               
-                        # after unloading make additional procedures (photocell delays, door close, etc...):
+                                history.append(
+                                    '%d car %d at landing %d Passenger %d leave car '
+                                    'Passengers in car %s Car destinations %s'
+                                    % (
+                                        env.now,
+                                        self.id,
+                                        i,
+                                        passengers_stat[j].id,
+                                        str(cars_stat[self.id].passengersInCar),
+                                        str(self.passengersInCarDest)))
+                        # after unloading make additional procedures 
+                        # (photocell delays, door close, etc...):
                         yield env.timeout(1)
-
-                                
 
         def motion(self, env, s_max, initial_car_distance, run_direction):
 
-            '''all is based on actualization of below statements in next steps with 'step_size' incrementation: 
+            '''all is based on actualization of below statements 
+            in next steps with 'step_size' incrementation:
+
             s = s0 + v0*(t) + (1/2)*a0*(t**2) + (1/6)*j*(t**3)
             v = v0 + a0*(t) + (1/2)*j*(t**2)
             a = a0 + j*(t)
@@ -664,14 +460,14 @@ def simulationRun(request):
 
             start_time = env.now
             
-            step_size = 0.01      # movement incrementation
-            t = 0                 # base time
-            t2 = 0                # additional time start when deceleration start
+            step_size = 0.01        # movement incrementation
+            t = 0                   # base time
+            t2 = 0                  # additional time start when deceleration start
 
             s0 = 0
             v0 = 0
             a0 = 0
-            j0 = self.jerk            # jerk [m/s3]
+            j0 = self.jerk          # jerk [m/s3]
             
             s = 0
             v = 0
@@ -682,12 +478,12 @@ def simulationRun(request):
             amax = self.acceleration
             amin = -self.acceleration
 
-            dActS = 0            # deceleration activation distance (s) before planned stop
-            sTillEnd = s_max     # distance to end of planned way
+            dActS = 0               # deceleration activation distance (s) before planned stop
+            sTillEnd = s_max        # distance to end of planned way
             
 
-            while s < s_max:     # run till reached demanded distance 's_max'
-                t += step_size   # update base time in each step
+            while s < s_max:        # run till reached demanded distance 's_max'
+                t += step_size      # update base time in each step
                 
                 if s < 0.5*s_max:           # first half of demanded distance
                     #print('przysp')
@@ -796,8 +592,10 @@ def simulationRun(request):
     building_group = BuildingGroup.objects.get(building=building_id)
 
 
-
+    ''''import seed value:'''
     random.seed(simulation_object.randomSeed)
+
+    '''create floorChartList:'''
     floorChartList = []
     input_run()
 
@@ -816,16 +614,25 @@ def simulationRun(request):
         cars_stat = {}          # local passengers database list
         history = []
         lobbyQueue = []         # actual passengers at lobby
-
-        # building population per 5 min [%]
+        # [%] value of building population appeared in lobbies per 5 min
         arrivalRate = simulation_step.step
-
+        '''Declare passangers quantity which will appear in building in current step:
+        previously declared passengersArrivalTime determine how much people appeard
+        with assumption that they appear every 5[min] in
+        quantity=(buildingPopulation*arrivalRate/100).
+        Expression (passengersArrivalTime/300) determine number of 5 minutes periods
+        in current step -> 5[min]=300[s]'''
         passengerAll = int((passengersArrivalTime/300)*(buildingPopulation*arrivalRate/100))
+        '''It is parameter for random.gauss function.
+        Declare how much passenger will in avg appeared at lobbies at the 
+        same time. Naturally only one passangeer''' 
+        passengerAvgAr = 1
+        ''' ... the same with avg appearance cadency in 5 [min] '''
+        passengerAvgAt = 300 / (buildingPopulation*(arrivalRate/100))
 
-        passengerAvgAr = 1                                                # passenger avg quantity
-        passengerAvgAt = 300 / (buildingPopulation*(arrivalRate/100))     # passenger apperance avg cadency in 5 min
-            
+        # activate Simpy env:
         env = simpy.Environment()
+        # put cars into env:
         carGenerator(env)
         env.process(passengersArrival(env))
         processEnd_proc = env.process(processEnd(env))
@@ -869,131 +676,3 @@ def simulationRun(request):
                    'building_group_size':building_group_size,
                    'alist':alist,})
     '''
-
-
-
-def simulationStat(request, simulation_id=None):
-    user_name = request.user.username
-    user_id = request.user.id
-
-    charts_number = 3
-    charts_number_list = [i for i in range(1, charts_number+1)]
-
-    #only buildings with any simulation just done
-    buildings_list = list(set([x.building for x in SimulationDetails.objects.filter(building__author__id=user_id)]))
-    
-
-    return render(request, 'simulator/simulationstat.html',
-                  {'buildings_list':buildings_list,
-                   'charts_number':charts_number_list,
-                   'user_name':user_name,},)
-
-
-def simulationsRequest(request):
-    building = get_object_or_404(Building, pk=request.GET.get('building_id', None))
-    simulation_list = [x.id for x in SimulationDetails.objects.filter(building=building).order_by('-id')]
-
-    data = {
-        'simulation_list': simulation_list
-    }
-    return JsonResponse(data)
-
-
-def chartRequest(request):
-    simulation_object = get_object_or_404(SimulationDetails, pk=request.GET.get('simulation_id', None))
-    forchart=simulation_object.statsimulation_set.all()
-    forchartlist = [[],[],[],[],[]]
-    
-    for asdfgh in forchart:
-        forchartlist[0].append(asdfgh.step)
-        forchartlist[1].append(asdfgh.AWT)
-        forchartlist[2].append(asdfgh.ATTD)
-        forchartlist[3].append(asdfgh.AINT)
-        forchartlist[4].append(asdfgh.ACLF)
-   
-    AWT  = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[1])]
-    ATTD = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[2])]
-    AINT = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[3])]
-    ACLF = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[4])]
-
-    data = {
-        'AWT': AWT,
-        'ATTD': ATTD,
-        'AINT': AINT,
-        'ACLF': ACLF,
-    }
-    return JsonResponse(data)
-
-class SignUpView(CreateView):
-    template_name = 'simulator/signup.html'
-    form_class = UserCreationForm
-
-
-def validate_username(request):
-    username = request.GET.get('username', None)
-    data = {
-        'is_taken': User.objects.filter(username__iexact=username).exists()
-    }
-    return JsonResponse(data)
-
-def validatePassword(request):
-    from django.contrib.auth.password_validation import validate_password
-    from django.core.exceptions import ValidationError
-    password = request.GET.get('password', None)
-    try:
-        result = validate_password(password)
-        data = {'is_valid': True}
-    except ValidationError:
-        data = {'is_valid': False}
-
-    return JsonResponse(data)
-
-def validateEmail(request):
-    from django.core.validators import validate_email
-    from django.core.exceptions import ValidationError
-    email = request.GET.get('email', None)
-    try:
-        validate_email(email)
-        data = {'is_valid': False}
-    except ValidationError:
-        data = {'is_valid': True}
-
-    return JsonResponse(data)
-
-def signUp(request):
-    name=request.POST['user_name']
-    mail=request.POST['user_mail']
-    password=request.POST['password1']
-
-    user = User.objects.create_user(name, mail, password)
-    return HttpResponseRedirect(reverse('simulator:index'))
-
-
-def signIn(request):
-    return render(request, 'simulator/signin.html')
-
-def signInRun(request):
-    username = request.POST['username']
-    password = request.POST['password']
-    user = authenticate(request, username=username, password=password)
-    if user is not None:
-        login(request, user)
-        return HttpResponseRedirect(reverse('simulator:index'))
-    else:
-        return render(request, 'simulator/signin.html')
-
-def logOut(request):
-    logout(request)
-    return HttpResponseRedirect(reverse('simulator:index'))
-    
-
-def generateChart(request):
-    simulation_id = request.GET.get('simulation_id', None)
-    chart=SummaryChart()
-    chart.simulation_id=simulation_id
-
-    data = {
-        'name': chart.chart_type
-    }
-    return JsonResponse(data)
-
