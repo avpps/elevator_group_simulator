@@ -49,6 +49,13 @@ def simulationRun(request):
         # activate car run process:
         for i in range(len(cars_stat)):        
             env.process(cars_stat[i].runCar(env))
+        for i, j in floors_stat.items():
+            for k, l in cars_stat.items():
+                floors_stat[i].carsAtFloor[k] = floors_stat[i].carAtFloor(env)
+                cars_stat[k].carAtFloors[i] = cars_stat[k].carAtFloor(env, i)
+                
+            
+            
 
 
     def passengersArrival(env):
@@ -227,11 +234,13 @@ def simulationRun(request):
             self.interfloor = interfloor
             self.population = population
             self.entry = entry
-            self.lobbyQueue = []
-
-        def carAt(self, env):
-            yield self.carAt_reactivate
-            yield env.timeout(0)
+            self.queue = []
+            self.carsAtFloor = {}
+        
+        class carAtFloor(self, env):
+            def carAt(self, env):
+                yield self.carAt_reactivate
+                yield env.timeout(0)
 
 
     class Passenger():
@@ -259,7 +268,10 @@ def simulationRun(request):
 
         def passengerRun(self, env, passengerId):
             while passengerId in lobbyQueue:
-                yield env.timeout(0.01)
+                for car in cars_stat:
+                    yield car.carAtFloors[0]
+                    
+                #yield env.timeout(0.01)
                 for allocatedCar in range(carsNumber):
                     yield env.timeout(0.0001)
                     # car have to be on floor 0 and not overfilled:
@@ -342,8 +354,16 @@ def simulationRun(request):
             ''''''
             self.carMovement = [[],[],[],[]]
             self.avgClfValue = 0
+            self.carAtFloors = {}
             
-
+        class carAtFloor(self, env, floor_id):
+            def isAt(env, floor_id):
+                self.carAtFloor = env.process(floors_stat[floor_id].carsAtFloor)
+            def isNotAt(env, floor_id):
+                pass #for make up
+                
+                
+            
         def avgClf(self):
             sClf = 0
             T = 0
