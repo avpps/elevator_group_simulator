@@ -54,10 +54,7 @@ def simulationRun(request):
                 floors_stat[i].carsAtFloor[k] = floors_stat[i].carAtFloor(env)
                 cars_stat[k].carAtFloors[i] = cars_stat[k].carAtFloor(env, i)
                 
-            
-            
-
-
+                
     def passengersArrival(env):
         '''continue till generated passanger quantity reach declared
         passangers quantity which should appear in building in current step
@@ -268,9 +265,11 @@ def simulationRun(request):
 
         def passengerRun(self, env, passengerId):
             while passengerId in lobbyQueue:
+                carList = []
                 for car in cars_stat:
-                    yield car.carAtFloors[0]
-                    
+                    carList.append(car.carAtFloors[0])
+                yield simpy.AnyOf(env, carList) # probably wrong syntax: https://simpy.readthedocs.io/en/latest/topical_guides/events.html#waiting-for-multiple-events-at-once
+                # below few lines for revision because of yield-based waiting for car method
                 #yield env.timeout(0.01)
                 for allocatedCar in range(carsNumber):
                     yield env.timeout(0.0001)
