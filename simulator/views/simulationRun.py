@@ -8,37 +8,21 @@ import simpy
 import random
 import sqlite3
 
-from simulator.models import Building, BuildingFloors, BuildingGroup, SimulationDetails
-from simulator.models import StatSimulation, StatPassengers, StatCars, SimulationRunDetails
-from simulator.models import CarRunDetails, SimulationSteps, BuildingTypes, StatSimulationSummary
+from simulator.models import Building, BuildingFloors, BuildingGroup
+from simulator.models import SimulationDetails
+from simulator.models import StatSimulation, StatPassengers, StatCars
+from simulator.models import SimulationRunDetails
+from simulator.models import CarRunDetails, SimulationSteps, BuildingTypes
+from simulator.models import StatSimulationSummary
 from simulator.models import Requirements
 
 
 def simulationRun(request):
 
-    def passengersArrival(env):
-        while len(passengers_stat) <= passengerAll:
-            passengerActAr = abs(int(random.gauss(passengerAvgAr, passengerAvgAr**0.5)))
-            # append all new passengers to passengers database:
-            for i in range(passengerActAr):
-                j = len(passengers_stat)
-                passengers_stat[j] = Passenger(env, j, env.now, buildingFloorNumber)
-                lobbyQueue.append(j)
-                history.append('%d        passangerID: %d appeared. LobbyQueueLen: %d'
-                              % (env.now, j, len(lobbyQueue)))
-                history.append(str(lobbyQueue))
-                history.append('%s' % '\n')
-            # passenger arrival time is also random:
-            passengerActAt = abs(random.gauss(passengerAvgAt, passengerAvgAt**0.5))
-            yield env.timeout(passengerActAt)
-        history.append('\n koniec naplywu \n')
-        processEnd_reactivate.succeed()
 
-    def input_run():
-
+    def input_run(env):
         global buildingPopulation
         buildingPopulation = 0
-
         for i in building_floors:
             j = [
                 i.local_id,
@@ -48,16 +32,65 @@ def simulationRun(request):
                 i.entry]
             floorChartList.append(j)
             buildingPopulation += i.population
-        
+
+            floors_stat[i.local_id] = Floor(
+                env,
+                i.local_id,
+                i.name,
+                i.interfloor,
+                i.population,
+                i.entry)
+
 
     def carGenerator(env):
-        '''create cars in cars_stat dictionary:'''
+        # create cars in cars_stat dictionary:
         for i in range(carsNumber):
             cars_stat[i] = Car(env, i)
-        '''activate car run process:'''
+        # activate car run process:
         for i in range(len(cars_stat)):        
             env.process(cars_stat[i].runCar(env))
-        
+
+
+    def passengersArrival(env):
+        '''continue till generated passanger quantity reach declared
+        passangers quantity which should appear in building in current step
+        '''
+        while len(passengers_stat) <= passengerAll:
+            # passengers quantity in also random time period passengerActAt
+            passengerActAr = abs(int(random.gauss(
+                passengerAvgAr, 
+                passengerAvgAr**0.5)))
+            # append all new passengers to passengers database:
+            for i in range(passengerActAr):
+                j = len(passengers_stat)
+                passengers_stat[j] = Passenger(
+                    env,
+                    j,
+                    env.now,
+                    buildingFloorNumber)
+                lobbyQueue.append(j)
+                history.append(
+                    '%d appeared passenger %d LobbyQueueLen %d %s'
+                    % (
+                        env.now,
+                        j,
+                        len(lobbyQueue),
+                        str(lobbyQueue)))
+            # passenger arrival time is also random:
+            passengerActAt = abs(random.gauss(
+                passengerAvgAt,
+                passengerAvgAt**0.5))
+            yield env.timeout(passengerActAt)
+        history.append(
+                    '%d ---all passengers appeared--- LobbyQueueLen %d'
+                    % (
+                        env.now,
+                        len(lobbyQueue)))
+        '''let know that till now simulation should wait with 
+        end only for each passanger run process end
+        '''
+        processEnd_reactivate.succeed()
+
 
     def processEnd(env):
         yield processEnd_reactivate
@@ -66,16 +99,16 @@ def simulationRun(request):
 
 
     def reports_generator():
-
-        '''history_file_name = 'run_history_{rn}'.format(rn=revision_no)
-        stat_db_name = 'stat_db_{rn}'.format(rn=revision_no)
-
-        stat_db_run.create_tables(stat_db_name)  
+        history_file_name = 'history_files/run_history_{sim}_{step}'.format(
+            sim=simulation_object.id,
+            step=simulation_step.step)
+        '''stat_db_name = 'stat_db_{rn}'.format(rn=revision_no)
+        stat_db_run.create_tables(stat_db_name)''' 
         history_file = open('{s}.txt'.format(s=history_file_name), 'a')
-
         for i in history:
             history_file.write(i)
-        history_file.write('')'''
+            history_file.write('\n')
+        history_file.write('')
         
         for i, j in passengers_stat.items():
             WT = j.depTime - j.arrTime
@@ -149,74 +182,29 @@ def simulationRun(request):
         )
 
 
-        '''history_file.write('\n \n')'''
-        
-        '''stat_db_run.add_col_wt_ttd()
-
-        #car values:
-        for i, j in cars_stat.items():
-            j.avgClf()
-        sClf = 0
-        Tc = 0
-
-        for i, j in cars_stat.items():
-            stat_db_run.add_row_cars_stat(i, j.carCapacity, j.carCapacity, j.avgClfValue)
-            stat_db_run.create_car_table(i)
-            for k in range(len(j.carDepartures)):
-                if k != 0:
-                    INT = j.carDepartures[k][0] - j.carDepartures[k-1][0]
-                else:
-                    INT = j.carDepartures[k][0]
-                stat_db_run.add_row_car_table(i, j.carDepartures[k][0],
-                                              INT, j.carDepartures[k][1])
-
-            sClf += j.avgClfValue
-            Tc += 1
-
-
-        AVT = sVt / Tp
-        ATTD = sTtd / Tp
-        ACLF = sClf / Tc
-
-        #history.append('AINT= %d \n' % AINT)
-        history_file.write('AVT= %d \n' % AVT)
-        history_file.write('ATTD= %d \n' % ATTD)
-        history_file.write('ACLF= %d \n' % ACLF)
-        history_file.close()
-
-        stat_db_run.summarize()
-
-        '''
-
     def reports_generator_summary():
-        ''' module for create StatSimulationSummary object '''
-        ''' with refference to Requirements obj '''
+        ''' module for create StatSimulationSummary object
+        with reference to Requirements obj '''
 
         # take Requirements dedicated to certain building:
-
         building_type = simulation_object.building.b_type
-        requirements_objects = Requirements.objects.filter(building_type=building_type).order_by('-rating')
+        requirements_objects = Requirements.objects.filter(
+            building_type=building_type).order_by('-rating')
 
         # take all steps StatSimulation for certain simulation:
-
-        steps_summary_objects = simulation_object.statsimulation_set.all().order_by('-step')
-
+        steps_summary_objects = simulation_object.statsimulation_set.all(
+            ).order_by('-step')
         # compare booth and save StatSimulationSummary object:
-
         for step in steps_summary_objects:
             stop = False
             for reqirement in requirements_objects:
-
-                if (step.step <= reqirement.AR
+                if (step.step >= reqirement.AR
                     and step.AWT <= reqirement.AWT
                     and step.ATTD <= reqirement.ATTD
                     and step.ACLF <= reqirement.ACLF):
-                    
                     StatSimulationSummary.objects.create(
-                        
                         simulation = simulation_object,
                         rating = reqirement.rating,
-
                         AR = step.step,
                         AWT = step.AWT,
                         AINT = step.AINT,
@@ -225,64 +213,105 @@ def simulationRun(request):
                     )
                     stop = True
                     break
-
                 else:
                     continue
             if stop:
-                break  
-      
+                break
+
+
+    class Floor():
+        def __init__(self, env, id, name, interfloor, population, entry):
+            self.env = env
+            self.id = id
+            self.name = name
+            self.interfloor = interfloor
+            self.population = population
+            self.entry = entry
+            self.lobbyQueue = []
+
+        def carAt(self, env):
+            yield self.carAt_reactivate
+            yield env.timeout(0)
+
+
     class Passenger():
         # containing: ID, arr time, dep time, destTime
         def __init__(self, env, id, arrTime, buildingFloorNumber):
             self.env = env
             self.id = id
             self.arrTime = arrTime
-            self.passengerUnloading_proc = env.process(self.passengerUnloading(env, self.id))
+            self.passengerUnloading_proc = env.process(
+                self.passengerUnloading(env, self.id))
             self.passengerUnloading_reactivate = env.event()
             self.destFloor = random.randrange(1, buildingFloorNumber, 1)
             self.passengerRun_proc = env.process(self.passengerRun(env, id))
-            
+
         def depTime(time):
             self.depTime = time
+
         def destTime(time):
             self.destTime = time
+
         def passengerUnloading(self, env, passengerId):       
             yield self.passengerUnloading_reactivate
             yield env.timeout(0)
             passengers_stat[passengerId].destTime = env.now
+
         def passengerRun(self, env, passengerId):
             while passengerId in lobbyQueue:
                 yield env.timeout(0.01)
                 for allocatedCar in range(carsNumber):
                     yield env.timeout(0.0001)
-                    '''car have to be on floor 0 and not overfilled:'''
-                    if cars_stat[allocatedCar].carPosition == 0 and cars_stat[allocatedCar].carUsage.count < cars_stat[allocatedCar].carCapacity:
-                        history.append('%d    passenger %d try to entry car %d. Doors are: %s \n'
-                                      % (env.now, passengerId, allocatedCar,
-                                         cars_stat[allocatedCar].doorOpenedMonit.is_alive))
+                    # car have to be on floor 0 and not overfilled:
+                    if (cars_stat[allocatedCar].carPosition == 0 
+                        and cars_stat[allocatedCar].carUsage.count < cars_stat[allocatedCar].carCapacity):
+                        history.append(
+                            '%d passenger %d try to entry car %d Doors are %s'
+                            % (
+                                env.now,
+                                passengerId,
+                                allocatedCar,
+                                cars_stat[allocatedCar].doorOpenedMonit.is_alive))
+                        # passengers try entry car but in order of ascending id:
                         self.req = cars_stat[allocatedCar].carUsage.request(priority=self.id)
-                        yield self.req | cars_stat[allocatedCar].doorOpenedMonit 
-                        history.append('%d       passenger %d waited %d. Doors are: %s \n'
-                                      % (env.now, passengerId, allocatedCar,
-                                         cars_stat[allocatedCar].doorOpenedMonit.is_alive))
+                        # passenger wait for entry or for car doors closing:
+                        yield self.req | cars_stat[allocatedCar].doorOpenedMonit
+                        history.append(
+                            '%d passenger %d waited to entry car %d with priority %d Doors are %s'
+                            % (
+                                env.now,
+                                passengerId,
+                                allocatedCar,
+                                self.id,
+                                cars_stat[allocatedCar].doorOpenedMonit.is_alive))
+                        # if not entry car:
                         if not self.req.triggered:
-                            history.append('%d    DoCl passenger %d not leave queue and not entry car %d \n'
-                                          % (env.now, passengerId, allocatedCar))
-                            cars_stat[allocatedCar].carUsage.put_queue.remove(self.req)                      
-                        else:                            
+                            history.append(
+                                '%d passenger %d not leave queue and not entry car %d'
+                                % (
+                                    env.now,
+                                    passengerId,
+                                    allocatedCar))
+                            cars_stat[allocatedCar].carUsage.put_queue.remove(self.req)
+                        else:
                             lobbyQueue.pop(lobbyQueue.index(passengerId))
                             cars_stat[allocatedCar].passengersInCar.append(passengerId)
                             cars_stat[allocatedCar].passengersInCarDest.append(self.destFloor)
                             passengers_stat[passengerId].depTime = env.now
-                            history.append('%d    passenger %d leave queue and entry car %d. LobbyQueue: %s \n'
-                                          % (env.now, passengerId, allocatedCar, str(lobbyQueue)))
+                            history.append(
+                                '%d passenger %d leave queue and entry car %d LobbyQueue %s'
+                                % (
+                                    env.now,
+                                    passengerId,
+                                    allocatedCar,
+                                    str(lobbyQueue)))
                             yield env.process(self.passengerUnloading(env, passengerId))
                             cars_stat[allocatedCar].carUsage.release(self.req)
                             break
                     else:
                         continue
-                
-            
+
+
     class Car():
         def __init__(self, env, id):
             self.id = id
@@ -300,7 +329,7 @@ def simulationRun(request):
             self.carPositionDist = 0
             # 
             self.carPositionDistSum = 0
-            # car have capacity limit. This is limiter:                       
+            # car have capacity limit. This is limiter:
             self.carUsage = simpy.PriorityResource(env, capacity = self.carCapacity)
             #self.doorOpened = env.process(doorOpened(env))
             self.doorOpened_reactivate = env.event()
@@ -324,36 +353,65 @@ def simulationRun(request):
             self.avgClfValue = sClf/T
 
         def putting_inside(self, env, passengersInCar1):
-            history.append('%d      %s \n' % (env.now, list(self.just_inside)))
+            history.append(
+                '%d car %d passengers just inside %s'
+                % (
+                    env.now,
+                    self.id,
+                    list(self.just_inside)))
             for i in passengersInCar1:
                 if i not in self.just_inside:
                     self.just_inside.append(i)
-                    #history.append('powinno ')
                     yield env.timeout(self.passengerTransferTime)
-                    history.append('%d       1 sec for pass transfer \n' % env.now)
-                    yield env.process(self.putting_inside(env, self.passengersInCar))
+                    history.append(
+                        '%d       1 sec for pass transfer'
+                        % (
+                            env.now))
+                    '''recursion used because after each entry to car, other
+                    passanger may appear in self.passengersInCar list
+                    and this passenger should also be tried to put inside:
+                    '''
+                    yield env.process(self.putting_inside(
+                        env,
+                        self.passengersInCar))
                     
         def doorOpened(self, env):
+            '''if is_alive passengers are allowed to entry car.
+            It is alive when
+            '''
             yield self.doorOpened_reactivate
             yield env.timeout(0)
 
         def runCar(self, env):
-            history.append('%d car %d generated' %(env.now, self.id))
+            history.append(
+                '%d car %d generated'
+                %(
+                    env.now,
+                    self.id))
             while True:
                 # car start at floor_id=0:
                 self.carPosition = 0
                 self.carPositionDist = 0
                 self.carPositionDistSum = 0
+                '''car movement is ralised as jumps beetween next floors
+                jump distance is just this:
+                '''
                 carPositionDistSumForInterfloorRun = 0
                 self.doorOpenedMonit = env.process(self.doorOpened(env))
                 
-                if len(lobbyQueue)>0: history.append(
-                    '%d car %d at floor %d' % (env.now, self.id, self.carPosition))
+                if len(lobbyQueue) > 0:
+                    history.append(
+                        '%d car %d at floor %d Doors are %s'
+                        % (
+                            env.now,
+                            self.id,
+                            self.carPosition,
+                            self.doorOpenedMonit.is_alive))
                 yield env.timeout(self.doorOpeningTime)
-                
                 if len(self.passengersInCar) > 0:
-                    # after loading make additional procedures 
-                    # (photocell delays, door close, etc...):
+                    '''after loading make additional procedures 
+                    (photocell delays, door close, etc...):
+                    '''
                     self.just_inside = []
                     yield env.process(
                         self.putting_inside(env, self.passengersInCar))
@@ -368,20 +426,23 @@ def simulationRun(request):
                             self.carPosition,
                             str(self.passengersInCar),
                             str(self.passengersInCarDest)))
+                    # activate door closing:
                     self.doorOpened_reactivate.succeed()
+                    # restart doorOpened as env.event with is_alive=?
                     self.doorOpened_reactivate = env.event()
                     yield env.timeout(self.doorClosingTime)
                     self.carDepartures.append([env.now, len(self.passengersInCar)])
                     history.append(
                         '%d car %d leave floor 0 Doors are %s'
-                        % (env.now,
-                           self.id,
-                           self.doorOpenedMonit.is_alive))
+                        % (
+                            env.now,
+                            self.id,
+                            self.doorOpenedMonit.is_alive))
                     # additional time for acceleration:
-                    yield env.timeout(0)    
-                    ###history.append(env.now, '|' * len(lobbyQueue))
-                    # 'buildingFloorNumber+1' to be sure that below 
-                    # 'if' statement will be checked also on top floor:
+                    yield env.timeout(0)
+                    ''''buildingFloorNumber+1' to be sure that below 
+                    'if' statement will be checked also on top floor:
+                    '''
                     for i in range(1, buildingFloorNumber+1):    
                         if len(self.passengersInCar) > 0:
                             # run for next floor, but it take a time:
@@ -422,14 +483,16 @@ def simulationRun(request):
                                     -1))
                             break
                         carPositionDistSumForInterfloorRun = self.carPositionDistSum
-                        # passengeer 'j' leave car but it take a time
-                        # (reversed to avoid pass and dest lists position 
-                        # changes. Thanks this, pass and dest are removed  
-                        # from right to left from list):
+                        '''passengeer 'j' leave car but it take a time
+                        (reversed to avoid pass and dest lists position 
+                        changes. Thanks this, pass and dest are removed  
+                        from right to left from list):
+                        '''
                         for j in reversed(self.passengersInCar):                                            
                             if i == passengers_stat[j].destFloor:
                                 yield env.timeout(self.passengerTransferTime)
                                 passengers_stat[j].passengerUnloading_reactivate.succeed()
+                                # probably not needed (above end passanger run process):
                                 passengers_stat[j].passengerUnloading_reactivate = env.event()
                                 self.wy = cars_stat[self.id].passengersInCar.index(j)
                                 cars_stat[self.id].passengersInCar.pop(self.wy)
@@ -444,8 +507,9 @@ def simulationRun(request):
                                         passengers_stat[j].id,
                                         str(cars_stat[self.id].passengersInCar),
                                         str(self.passengersInCarDest)))
-                        # after unloading make additional procedures 
-                        # (photocell delays, door close, etc...):
+                        '''after unloading make additional procedures 
+                        (photocell delays, door close, etc...):
+                        '''
                         yield env.timeout(1)
 
         def motion(self, env, s_max, initial_car_distance, run_direction):
@@ -456,7 +520,8 @@ def simulationRun(request):
             s = s0 + v0*(t) + (1/2)*a0*(t**2) + (1/6)*j*(t**3)
             v = v0 + a0*(t) + (1/2)*j*(t**2)
             a = a0 + j*(t)
-            j = j0 '''
+            j = j0
+            '''
 
             start_time = env.now
             
@@ -571,7 +636,6 @@ def simulationRun(request):
                 self.carMovement[3].append(a)
 
 
-
     '''refering to certain (!last added!) simulation object:'''
     simulationslist = SimulationDetails.objects.order_by('id')
     simulation_position_on_list = len(simulationslist)-1
@@ -610,8 +674,9 @@ def simulationRun(request):
     '''________________________________'''
     '''main loop for serial simulation:'''
     for simulation_step in simulationstepslist:
-        passengers_stat = {}    # local passengers database list
-        cars_stat = {}          # local passengers database list
+        passengers_stat = {}    # local passengers database dict
+        cars_stat = {}          # local cars database dict
+        floors_stat = {}        # local floors database dict
         history = []
         lobbyQueue = []         # actual passengers at lobby
         # [%] value of building population appeared in lobbies per 5 min
