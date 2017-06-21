@@ -75,7 +75,8 @@ class StatSimulation(models.Model):
     AINT = models.FloatField(default=0)
     AWT = models.FloatField(default=0)
     ATTD = models.FloatField(default=0)
-    ACLF = models.FloatField(default=0) 
+    ACLF = models.FloatField(default=0)
+    simulation_time = models.FloatField(default=0)
 
 
 class StatSimulationSummary(models.Model):
@@ -88,13 +89,15 @@ class StatSimulationSummary(models.Model):
     AINT = models.FloatField(default=0)
     ATTD = models.FloatField(default=0)
     ACLF = models.FloatField(default=0)
+    simulation_time = models.FloatField(default=0)
 
 class StatPassengers(models.Model):
 
     simulation = models.ForeignKey(SimulationDetails, on_delete=models.CASCADE)
     step = models.FloatField(default=0)
     
-    local_id = models.IntegerField() 
+    local_id = models.IntegerField()
+    entryFloor = models.IntegerField(default=0)
     destFloor = models.IntegerField() 
     arrTime = models.FloatField() 
     depTime = models.FloatField()

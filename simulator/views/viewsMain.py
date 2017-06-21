@@ -85,7 +85,7 @@ def addNewBuilding(request):
         building_id = namelist[len(namelist)-1].id
         building = get_object_or_404(Building, pk=building_id)
 
-        for i in range(1, int(floors)+1):
+        for i in range(0, int(floors)):
             BuildingFloors.objects.create(
                 building=building,
                 local_id=i,
@@ -151,7 +151,7 @@ def addNewBuildingDetails(request):
     building = get_object_or_404(Building, pk=building_id)
     floors = building.floors
 
-    for i in range(1, floors+1):
+    for i in range(0, floors):
         BuildingFloors.objects.filter(building=building).filter(local_id=i).update(
             name=request.POST['name{cd}'.format(cd=i)],
             interfloor=request.POST['floor_dist{cd}'.format(cd=i)],
@@ -283,7 +283,7 @@ def simulationsRequest(request):
 def chartRequest(request):
     simulation_object = get_object_or_404(SimulationDetails, pk=request.GET.get('simulation_id', None))
     forchart=simulation_object.statsimulation_set.all()
-    forchartlist = [[],[],[],[],[]]
+    forchartlist = [[],[],[],[],[],[]]
     
     for asdfgh in forchart:
         forchartlist[0].append(asdfgh.step)
@@ -291,17 +291,19 @@ def chartRequest(request):
         forchartlist[2].append(asdfgh.ATTD)
         forchartlist[3].append(asdfgh.AINT)
         forchartlist[4].append(asdfgh.ACLF)
+        forchartlist[5].append(asdfgh.simulation_time)
    
     AWT  = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[1])]
     ATTD = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[2])]
     AINT = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[3])]
     ACLF = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[4])]
-
+    SimT = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[5])]
     data = {
         'AWT': AWT,
         'ATTD': ATTD,
         'AINT': AINT,
         'ACLF': ACLF,
+        'SimT': SimT,
     }
     return JsonResponse(data)
 

@@ -1,29 +1,14 @@
-
-  <title>Simulator_stat</title>
-
-
-
-
-
-
-
+<title>Simulator_stat</title>
 
 {% extends 'simulator/base.html' %}
 
-
 {% block initial_scripts %}
-
 <script>
     $('#li_stat').attr('class', 'active');
 </script>
-
 {% endblock %}
 
-
-
-
 {% block content %}
-
     {% load static %}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
@@ -32,27 +17,21 @@
 	
 		<div class="flex-item1">
 		<nav class="vertical-menu">
-
             <p style='text-align:center'>Charts quantity</p>
-
             <select id="chartsQuantity">
                 <option style='width:150px;' value=None>choose</option>
                 <option style='width:150px;' value=1>1</option>
                 <option style='width:150px;' value=2>2</option>
                 <option style='width:150px;' value=3>3</option>
             </select>
-
             <br>
             <br>
             <br>
-
             <p style='text-align:center'>View style:</p>
-
             <select id="viewStyle">
                 <option style='width:150px;' value='single'>single details</option>
                 <option style='width:150px;' value='comparison'>comparison</option>
             </select>
-
             <br>
             <br>
             <br>
@@ -129,7 +108,6 @@
 
 
     <!-- response for data reqest to put it into charts into canvas objects -->
-    
     <script>
         {% for no in charts_number %}
         $('#chartRequest' + {{ no }}).change(function () {
@@ -158,7 +136,6 @@
     </script>
 
     <script>
-
         $('#chartsQuantity').change(function () {
             console.log('adsdadsadasda');
             $('#comparisonChart').data.datasets.forEach((dataset) => {
@@ -168,19 +145,15 @@
 
         })
     </script>
-		
 
     <!-- generate chart into specified canvas object -->
     <script>
         function createNewChartSingle(data, position_id) {
             createNewChart(data, position_id);
         };
-
         function createNewChartComparison(data, position_id) {
             createNewChart(data, position_id);
         };
-
-
         function createNewChart(data, position_id) {
             var ctx = document.getElementById(position_id).getContext('2d');
             myChart = new Chart(ctx, {
@@ -209,6 +182,12 @@
                         data: data.ACLF,
                         fill: false,
                         borderColor: 'rgb(64, 0, 255)',
+                    },
+                    {
+                        label: 'Simulation duration',
+                        data: data.SimT,
+                        fill: false,
+                        borderColor: 'rgb(0, 0, 0)',
                     }],
                 },
                 options: {
@@ -231,9 +210,5 @@
                 },
             });
         }
-
-
-
-    </script>	
-
+    </script>
 {% endblock %}

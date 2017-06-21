@@ -1,11 +1,13 @@
 {
   "ExpandedNodes": [
     "",
+    "\\groupsimulator",
+    "\\history_files",
     "\\simulator",
-    "\\simulator\\static\\simulator",
     "\\simulator\\templates",
-    "\\simulator\\templates\\simulator"
+    "\\simulator\\templates\\simulator",
+    "\\simulator\\views"
   ],
-  "SelectedNode": "\\simulator\\views.py",
+  "SelectedNode": "\\simulator\\views\\simulationRun.py",
   "PreviewInSolutionExplorer": false
 }
