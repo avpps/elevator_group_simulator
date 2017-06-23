@@ -86,7 +86,7 @@
 		        </tr>
 	        {% for simulation in simulations_list %}
 		        <tr>
-			        <td>{{ simulation.id }}</td>
+			        <td><a href="{% url 'simulator:simulationHistory' simulation.id %}">{{ simulation.id }}</a></td>
 			        <td>{{ simulation.building.name }}</td>
                 {% for aaaa in simulation.statsimulationsummary_set.all %}
                     <td>{{ aaaa.rating }}</td>

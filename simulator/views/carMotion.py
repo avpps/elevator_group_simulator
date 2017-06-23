@@ -116,8 +116,9 @@ def motion(self, env, s_max, initial_car_distance, run_direction):
                         sTillEnd = s_max - s
 
         yield env.timeout(step_size)
-
+        '''
         self.carMovement[0].append(start_time + t)
         self.carMovement[1].append(initial_car_distance + (run_direction * s))
         self.carMovement[2].append(v)
         self.carMovement[3].append(a)
+        '''

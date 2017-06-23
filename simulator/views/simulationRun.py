@@ -129,19 +129,12 @@ def simulationRun(request):
 
     def reports_generator():
 
-        history_file_name = 'history_files/run_history_{sim}_{step}'.format(
-            sim=simulation_object.id,
-            step=simulation_step.step)
-        history_file = open('{s}.txt'.format(s=history_file_name), 'a')
         counter = 0
         for i in history:
             counter += 1
-            history_file.write(
-                '{:>6} {} {}'.format(
-                    str(counter),
-                    i,
-                    '\n',))
-        history_file.write('')
+            SimulationRunDetails.objects.create(
+                step = arrivalRate,
+                line = '{:>6} {}'.format(str(counter), i,))
         
         for i, j in passengers_stat.items():
             WT = j.depTime - j.arrTime

@@ -26,7 +26,7 @@
             </select>
             <br>
             <br>
-            <br>
+
             <p style='text-align:center'>View style:</p>
             <select id="viewStyle">
                 <option style='width:150px;' value='single'>single details</option>
@@ -34,7 +34,15 @@
             </select>
             <br>
             <br>
+
+            <p style='text-align:center'>Data:</p>
+            <select id="viewData">
+                <option style='width:150px;' value='stepsSummary'>summary</option>
+                <option style='width:150px;' value='waitingTimeHistogram'>waiting time histogram</option>
+            </select>
             <br>
+            <br>
+
 
             <p style='text-align:center'>Choose details:</p>
 
@@ -51,36 +59,26 @@
 
 				<br>
 				<br>
-				<br>
 			{% endfor %}
-			
 		</nav>
 		</div>
-
 		<div class="flex-item2">
-			
             <canvas id="comparisonChart" width=100% height=100%></canvas>
-
 			{% for no in charts_number %}
 				<p id="p_chart{{no}}">
                     <!-- change accordingly also in reffering script -->
                     <canvas id="myChart{{no}}" width=100% height=0%></canvas>
 				</p>
 			{% endfor %}
-			
 		</div>
-		
 	</div>
-	
 	
 	<script src="https://code.jquery.com/jquery-3.1.0.min.js"></script>
 	<script src="{% static 'js/app.js' %}"></script>
-	
 
     <!-- response for simulation list reqest to put it into select objects -->
 	{% for no in charts_number %}
     <script>
-
             $('#simulationsRequest' + {{ no }}).change(function () {
                 var building_id = $(this).val();
 
@@ -98,7 +96,7 @@
                         for (var key in sim_dict) {
                             content += temp.replace(/val/g, sim_dict[key]);
                         }
-                        document.getElementById("chartRequest" + {{no }}).innerHTML = content
+                        document.getElementById("chartRequest" + {{ no }}).innerHTML = content
             }
 			});
 		});
@@ -112,22 +110,25 @@
         {% for no in charts_number %}
         $('#chartRequest' + {{ no }}).change(function () {
             var simulation_id = $(this).val();
+            var view_style = $('#viewStyle').val();
+            var view_data = $('#viewData').val();
             //reset canvas before draw new chart:
             $('#myChart' + {{ no }}).remove();
             $('#p_chart' + {{ no }}).append('<canvas id="myChart{{no}}" width=100% height=50%></canvas>');
-
             $.ajax({
                 url: 'ajax/chartRequest',
                 data: {
-                    'simulation_id': simulation_id
+                    'simulation_id': simulation_id,
+                    'view_data': view_data,
                 },
                 dataType: 'json',
                 success: function (data) {
-                    var view_style = $('#viewStyle').val();
-                    if (view_style == 'single') {
+                    if ((view_style == 'single') && (view_data == 'stepsSummary')) {
                         createNewChartSingle(data, "myChart" + {{ no }});
                     };
-
+                    if ((view_style == 'single') && (view_data == 'waitingTimeHistogram')) {
+                        createNewChartSingleHistogramWT(data, "myChart" + {{ no }});
+                    };
                 },
 			});
 		});
@@ -137,7 +138,6 @@
 
     <script>
         $('#chartsQuantity').change(function () {
-            console.log('adsdadsadasda');
             $('#comparisonChart').data.datasets.forEach((dataset) => {
                 dataset.data.push("{ 'x': 0, 'y': 0 }, { 'x': 15, 'y': 500 },")
             });
@@ -155,40 +155,42 @@
             createNewChart(data, position_id);
         };
         function createNewChart(data, position_id) {
+            var data_set
+            data_set = [{
+                label: 'AWT',
+                data: data.AWT,
+                fill: false,
+                borderColor: 'rgb(255, 0, 0)',
+                },
+                {
+                label: 'ATTD',
+                data: data.ATTD,
+                fill: false,
+                borderColor: 'rgb(255, 191, 0)',
+                },
+                {
+                label: 'AINT',
+                data: data.AINT,
+                fill: false,
+                borderColor: 'rgb(0, 255, 0)',
+                },
+                {
+                label: 'ACLF',
+                data: data.ACLF,
+                fill: false,
+                borderColor: 'rgb(64, 0, 255)',
+                },
+                {
+                label: 'Simulation duration',
+                data: data.SimT,
+                fill: false,
+                borderColor: 'rgb(0, 0, 0)',
+                }]
             var ctx = document.getElementById(position_id).getContext('2d');
             myChart = new Chart(ctx, {
                 type: 'scatter',
                 data: {
-                    datasets: [{
-                        label: 'AWT',
-                        data: data.AWT,
-                        fill: false,
-                        borderColor: 'rgb(255, 0, 0)',
-                    },
-                    {
-                        label: 'ATTD',
-                        data: data.ATTD,
-                        fill: false,
-                        borderColor: 'rgb(255, 191, 0)',
-                    },
-                    {
-                        label: 'AINT',
-                        data: data.AINT,
-                        fill: false,
-                        borderColor: 'rgb(0, 255, 0)',
-                    },
-                    {
-                        label: 'ACLF',
-                        data: data.ACLF,
-                        fill: false,
-                        borderColor: 'rgb(64, 0, 255)',
-                    },
-                    {
-                        label: 'Simulation duration',
-                        data: data.SimT,
-                        fill: false,
-                        borderColor: 'rgb(0, 0, 0)',
-                    }],
+                    datasets: data_set,
                 },
                 options: {
                     scales: {
@@ -197,15 +199,106 @@
                                 type: 'linear',
                                 position: 'bottom',
                             },
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'Arrival rate [%] of building population'
+                            },
                         }],
                         yAxes: [{
                             ticks: {
                                 beginAtZero: true,
                             },
+                            scaleLabel: {
+                                display: true,
+                                labelString: '[s]'
+                            },
                         }]
                     },
                     animation: {
                         duration: 10
+                    },
+                    title: {
+                        display: true,
+                        text: '___________' + data.SimId + ':___________',
+                    }
+                },
+            });
+        }
+        function createNewChartSingleHistogramWT(data, position_id) {
+            var data_set = [];
+            function aaa(data) {
+                var counter = 0
+                for (var i in data.WT_n) {
+                    couter = (counter) + 1;
+                    data_set[i] = {
+                        label: 'WT_'+i,
+                        data: data.WT_n[i],
+                        yAxisID: "y-axis-1",
+                        fill: false,
+                        backgroundColor: data.colors[i],
+                    }
+                };
+                var add = data_set.length;
+                for (var i in data.WT_saturation) {
+                    data_set[parseInt(i) + add] = {
+                        label: 'WT_sat_' + i,
+                        data: data.WT_saturation[i],
+                        yAxisID: "y-axis-2",
+                        fill: false,
+                        type: 'line',
+                        borderColor: data.colors[i],
+                    }
+                };
+            };
+            aaa(data);
+
+            labels_set = data.WT_bins[0];
+
+            var ctx = document.getElementById(position_id).getContext('2d');
+            myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels_set,
+                    datasets: data_set,
+                },
+                options: {
+                    scales: {
+                        xAxes: [{
+                            scaleLabel: {
+                                display: true,
+                                labelString: '[s]',
+                            },
+                            
+                        }],
+                        yAxes: [
+                            {
+                                scaleLabel: {
+                                    display: true,
+                                    labelString: 'histogram [%]',
+                                },
+                                type: "linear",
+                                display: true,
+                                position: "left",
+                                id: "y-axis-1",
+                            },
+                            {
+                                scaleLabel: {
+                                    display: true,
+                                    labelString: 'saturation [%]',
+                                },
+                                type: "linear",
+                                display: true,
+                                position: "right",
+                                id: "y-axis-2",
+                            },
+                        ],
+                    },
+                    animation: {
+                        duration: 10
+                    },
+                    title: {
+                        display: true,
+                        text: '___________' + data.SimId + ':___________',
                     }
                 },
             });

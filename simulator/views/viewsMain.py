@@ -11,6 +11,7 @@ from django.contrib.auth.decorators import login_required, permission_required
 import simpy
 import random
 import sqlite3
+import numpy as np
 
 ######  _________  ##########
 
@@ -252,6 +253,23 @@ def deleteSimulation(request):
     return HttpResponseRedirect(reverse('simulator:index'))
 
 
+def simulationHistory(request, simulation_id):
+
+    simulation = get_object_or_404(SimulationDetails, pk=simulation_id)
+    steps_list = [i.step for i in simulation.simulationsteps_set.all()]
+
+    return render(request, 'simulator/simulationhistory.html',
+                  {'simulation_id': simulation_id,
+                   'steps_list': steps_list,},)
+
+def simulationHistoryRequest(request):
+    a = 'sdfdsf'
+    print('---asfsdafsdfsdfsd------')
+    data = {
+        'test': a}
+    return JsonResponse(data)
+
+    
 
 def simulationStat(request, simulation_id=None):
     user_name = request.user.username
@@ -282,30 +300,63 @@ def simulationsRequest(request):
 
 def chartRequest(request):
     simulation_object = get_object_or_404(SimulationDetails, pk=request.GET.get('simulation_id', None))
-    forchart=simulation_object.statsimulation_set.all()
-    forchartlist = [[],[],[],[],[],[]]
-    
-    for asdfgh in forchart:
-        forchartlist[0].append(asdfgh.step)
-        forchartlist[1].append(asdfgh.AWT)
-        forchartlist[2].append(asdfgh.ATTD)
-        forchartlist[3].append(asdfgh.AINT)
-        forchartlist[4].append(asdfgh.ACLF)
-        forchartlist[5].append(asdfgh.simulation_time)
-   
-    AWT  = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[1])]
-    ATTD = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[2])]
-    AINT = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[3])]
-    ACLF = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[4])]
-    SimT = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[5])]
-    data = {
-        'AWT': AWT,
-        'ATTD': ATTD,
-        'AINT': AINT,
-        'ACLF': ACLF,
-        'SimT': SimT,
-    }
-    return JsonResponse(data)
+    view_data = request.GET.get('view_data', None)
+    SimId = pk=request.GET.get('simulation_id', None)
+    def numpy_converter(data):
+        output_list = []
+        for i in data:
+            output_list.append(i.item())
+        return output_list
+
+    if view_data == 'stepsSummary':
+        forchart=simulation_object.statsimulation_set.all()
+        forchartlist = [[],[],[],[],[],[]]
+        for asdfgh in forchart:
+            forchartlist[0].append(asdfgh.step)
+            forchartlist[1].append(asdfgh.AWT)
+            forchartlist[2].append(asdfgh.ATTD)
+            forchartlist[3].append(asdfgh.AINT)
+            forchartlist[4].append(asdfgh.ACLF)
+            forchartlist[5].append(asdfgh.simulation_time)
+        AWT  = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[1])]
+        ATTD = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[2])]
+        AINT = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[3])]
+        ACLF = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[4])]
+        SimT = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[5])]
+        data = {
+            'SimId': SimId,
+            'AWT': AWT,
+            'ATTD': ATTD,
+            'AINT': AINT,
+            'ACLF': ACLF,
+            'SimT': SimT,
+        }
+        return JsonResponse(data)
+    if view_data == 'waitingTimeHistogram':
+        WT_bins = []
+        WT_n = []
+        WT_saturation = []
+        colors = []
+        counter = 0
+        for i in simulation_object.simulationsteps_set.all():
+            counter += 1
+            WT_list_step = np.array([i.WT for i in simulation_object.statpassengers_set.only('WT').filter(step = i.step)])
+            (WT_step_n, WT_step_bins) = np.histogram(WT_list_step, bins=20, range=(0,200), density=True)
+            # converted to python datatypes
+            # 'i*1000' to get value in [%] of all passengers
+            WT_n.append([i*1000 for i in numpy_converter(WT_step_n)])
+            WT_bins.append(numpy_converter(WT_step_bins))
+            WT_saturation.append([sum(WT_step_n[:i]*1000) for i in range(1, len(WT_step_n)+1)])
+            colors.append("hsl({val}, 100%, 50%)" .format(val=counter*20))
+        data = {
+            'SimId': SimId,
+            'WT_bins': WT_bins,
+            'WT_n': WT_n,
+            'WT_saturation': WT_saturation,
+            'colors': colors,
+        }
+        return JsonResponse(data)
+
 
 class SignUpView(CreateView):
     template_name = 'simulator/signup.html'

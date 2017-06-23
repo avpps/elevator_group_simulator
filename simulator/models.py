@@ -117,6 +117,8 @@ class StatCars(models.Model):
 class SimulationRunDetails(models.Model):
 
     simulation = models.ForeignKey(SimulationDetails, on_delete=models.CASCADE)
+    step = models.FloatField(default=0)
+    line = models.TextField(default=0)
 
 class CarRunDetails(models.Model):
 
