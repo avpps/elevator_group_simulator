@@ -26,7 +26,7 @@ urlpatterns = [
         name='simulationStat'),
     url(r'^simulationhistory/(?P<simulation_id>[0-9]+)/$', views.simulationHistory,
         name='simulationHistory'),
-    url(r'^simulationhistory/(?P<simulation_id>[0-9]+)/ajax/simulationHistoryRequest/$', 
+    url(r'^ajax/simulationHistoryRequest/$', 
         views.simulationHistoryRequest,
         name='simulationHistoryRequest'),
 

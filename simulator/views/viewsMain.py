@@ -263,12 +263,13 @@ def simulationHistory(request, simulation_id):
                    'steps_list': steps_list,},)
 
 def simulationHistoryRequest(request):
-    a = 'sdfdsf'
-    print('---asfsdafsdfsdfsd------')
+    simulation = get_object_or_404(SimulationDetails, pk=request.GET.get('simulation_id', None))
+    step =  request.GET.get('step', None)
+    history = [i.line for i in simulation.simulationrundetails_set.filter(step = step)]
     data = {
-        'test': a}
+        'history': history,
+    }
     return JsonResponse(data)
-
     
 
 def simulationStat(request, simulation_id=None):

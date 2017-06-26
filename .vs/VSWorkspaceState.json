@@ -8,6 +8,6 @@
     "\\simulator\\templates\\simulator",
     "\\simulator\\views"
   ],
-  "SelectedNode": "\\history_files",
+  "SelectedNode": "\\simulator\\views\\viewsMain.py",
   "PreviewInSolutionExplorer": false
 }

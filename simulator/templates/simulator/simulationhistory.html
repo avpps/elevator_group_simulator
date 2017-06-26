@@ -13,40 +13,44 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
 
-	<h2 style='text-align:center'>Run history for simulation: {{ simulation_id }}</h2>	
-	<div class='flex-container'>
-		<div class="flex-item1">
-		<nav class="vertical-menu">
-            
-            <p style='text-align:center'>Step:</p>
-            <select id="step">
-                <option style='width:150px;' value=None>select</option>
-                {% for step in steps_list %}
-                <option style='width:150px;' value={{ step }}>{{ step }}</option>
-                {% endfor %}
-            </select>
-		</nav>
-		</div>
-		<div class="flex-item2">
+	<h2 style='text-align:left'>Run history for simulation: {{ simulation_id }}
+    <select id="step">
+        <option style='width:150px;' value=None>select</option>
+        {% for step in steps_list %}
+        <option style='width:150px;' value={{ step }}>{{ step }}</option>
+        {% endfor %}
+    </select>        
 
-		</div>
+
+	<div class="flex-item2">
+        <table  id="history">
+            <tr><th style='text-align:left;font-style:normal;font-size:10px'><code>val</code><th></tr>
+        </table>
 	</div>
-	
+
 	<script src="https://code.jquery.com/jquery-3.1.0.min.js"></script>
 	<script src="{% static 'js/app.js' %}"></script>
 
     <script>
         $('#step').change(function () {
+            var simulation_id = {{ simulation_id }};
             var step = $(this).val();
-            console.log(step)
             $.ajax({
-                url: 'ajax/simulationHistoryRequest',
+                url: '{% url "simulator:simulationHistoryRequest" %}',
                 data: {
+                    'simulation_id': simulation_id,
                     'step': step,
                 },
                 dataType: 'json',
                 success: function (data) {
-                    console.log('1451')
+                    console.log('---1---1--')
+                    content = "";
+                    temp = "<tr><th style='text-align:left;te'><code>val</code><th></tr>";
+                    history = data.history;
+                    for (var i in data.history) {
+                        content += temp.replace(/val/g, data.history[i]);
+                    };
+                    document.getElementById("history").innerHTML = content
                 },
             });
         });
@@ -54,3 +58,7 @@
     </script>
 
 {% endblock %}
+
+
+
+

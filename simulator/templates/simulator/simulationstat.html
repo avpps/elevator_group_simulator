@@ -90,12 +90,12 @@
                     dataType: 'json',
                     success: function (data) {
                         content = "";
-                        temp = "<option style='width:150px;' value=val>val</option>"
+                        temp = "<option style='width:150px;' value=val>val</option>";
                         sim_dict = data.simulation_list;
                         content += temp.replace(/val/g, 'simulation');
                         for (var key in sim_dict) {
                             content += temp.replace(/val/g, sim_dict[key]);
-                        }
+                        };
                         document.getElementById("chartRequest" + {{ no }}).innerHTML = content
             }
 			});

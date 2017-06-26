@@ -133,6 +133,7 @@ def simulationRun(request):
         for i in history:
             counter += 1
             SimulationRunDetails.objects.create(
+                simulation=simulation_object,
                 step = arrivalRate,
                 line = '{:>6} {}'.format(str(counter), i,))
         
