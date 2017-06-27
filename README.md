@@ -13,10 +13,13 @@ https://github.com/piotrekps/elevator_group_simulator/blob/master/simulator/view
 
 
 
+
+
 How application works?
 
 
-Log in:
+
+Sign and log in:
 
 ![log](https://user-images.githubusercontent.com/26420051/27590517-41290d4a-5b4f-11e7-8243-9bda22a339f2.png)
 
