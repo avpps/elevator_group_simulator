@@ -7,8 +7,8 @@ Based on Python with Django, Simpy, NumPy and ChartJS.
 
 
 Application at web:
-http://piotrekps.pythonanywhere.com/simulator/
-www.groupsimulator.pl
+</br>http://piotrekps.pythonanywhere.com/simulator/ 
+</br>www.groupsimulator.pl
 
 
 Engine of application is simulationRun.py file:
