@@ -28,7 +28,7 @@
             <br>
 
             <p style='text-align:center'>View style:</p>
-            <select id="viewStyle">
+            <select id="viewStyle" >
                 <option style='width:150px;' value='single'>single details</option>
                 <option style='width:150px;' value='comparison'>comparison</option>
             </select>
@@ -39,6 +39,8 @@
             <select id="viewData">
                 <option style='width:150px;' value='stepsSummary'>summary</option>
                 <option style='width:150px;' value='waitingTimeHistogram'>waiting time histogram</option>
+                <option style='width:150px;' value='passengersArrival'>passengers arrival</option>
+                <option style='width:150px;' value='carMotionCycle'>car motion cycle</option>
             </select>
             <br>
             <br>
@@ -56,6 +58,10 @@
 
 				<select id="chartRequest{{ forloop.counter }}">
 				</select>
+
+                <select multiple id="stepsChoice{{ forloop.counter }}">
+                </select>
+
 
 				<br>
 				<br>
@@ -96,7 +102,7 @@
                         for (var key in sim_dict) {
                             content += temp.replace(/val/g, sim_dict[key]);
                         };
-                        document.getElementById("chartRequest" + {{ no }}).innerHTML = content
+                        document.getElementById("chartRequest" + {{ no }}).innerHTML = content;      
             }
 			});
 		});
@@ -123,11 +129,26 @@
                 },
                 dataType: 'json',
                 success: function (data) {
+                    content = "";
+                    temp = "<option value=val>val</option>";
+                    step_dict = data.simulation_steps_list;
+                    for (var key in step_dict) {
+                        content += temp.replace(/val/g, step_dict[key]);
+                        console.log(key)
+                    };
+                    document.getElementById("stepsChoice" + {{ no }}).innerHTML = content;
+
                     if ((view_style == 'single') && (view_data == 'stepsSummary')) {
                         createNewChartSingle(data, "myChart" + {{ no }});
                     };
                     if ((view_style == 'single') && (view_data == 'waitingTimeHistogram')) {
                         createNewChartSingleHistogramWT(data, "myChart" + {{ no }});
+                    };
+                    if ((view_style == 'single') && (view_data == 'passengersArrival')) {
+                        createNewChartPassengersArrival(data, "myChart" + {{ no }});
+                    };
+                    if ((view_style == 'single') && (view_data == 'carMotionCycle')) {
+                        createNewChartCarMotionCycle(data, "myChart" + {{ no }});
                     };
                 },
 			});
@@ -148,12 +169,15 @@
 
     <!-- generate chart into specified canvas object -->
     <script>
+
         function createNewChartSingle(data, position_id) {
             createNewChart(data, position_id);
         };
+
         function createNewChartComparison(data, position_id) {
             createNewChart(data, position_id);
         };
+
         function createNewChart(data, position_id) {
             var data_set
             data_set = [{
@@ -187,6 +211,7 @@
                 borderColor: 'rgb(0, 0, 0)',
                 }]
             var ctx = document.getElementById(position_id).getContext('2d');
+            console.log('aaa',data.AWT);
             myChart = new Chart(ctx, {
                 type: 'scatter',
                 data: {
@@ -223,7 +248,8 @@
                     }
                 },
             });
-        }
+        };
+
         function createNewChartSingleHistogramWT(data, position_id) {
             var data_set = [];
             function aaa(data) {
@@ -302,6 +328,103 @@
                     }
                 },
             });
-        }
+        };
+        
+        function createNewChartPassengersArrival(data, position_id) {
+            var data_set
+            data_set = [{
+                label: 'AWT',
+                data: data.AWT,
+                fill: false,
+                showLine: false,
+                borderColor: 'rgb(255, 0, 0)',
+            }]
+            var ctx = document.getElementById(position_id).getContext('2d');
+            myChart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: data_set,
+                },
+                options: {
+                    scales: {
+                        xAxes: [{
+                            ticks: {
+                                type: 'linear',
+                                position: 'bottom',
+                            },
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'simulation time [s]'
+                            },
+                        }],
+                        yAxes: [{
+                            ticks: {
+                                beginAtZero: true,
+                            },
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'passengers'
+                            },
+                        }]
+                    },
+                    animation: {
+                        duration: 10
+                    },
+                    title: {
+                        display: true,
+                        text: '___________' + data.SimId + ':___________',
+                    }
+                },
+            });
+        };
+
+        function createNewChartCarMotionCycle(data, position_id) {
+            var data_set
+            data_set = [{
+                label: 'AWT',
+                data: data.height,
+                fill: false,
+                showLine: false,
+                borderColor: 'rgb(255, 0, 0)',
+            }]
+            console.log(data.speed);
+            var ctx = document.getElementById(position_id).getContext('2d');
+            myChart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: data_set,
+                },
+                options: {
+                    scales: {
+                        xAxes: [{
+                            ticks: {
+                                type: 'linear',
+                                position: 'bottom',
+                            },
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'simulation time [s]'
+                            },
+                        }],
+                        yAxes: [{
+                            ticks: {
+                                beginAtZero: true,
+                            },
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'elevator position in building'
+                            },
+                        }]
+                    },
+                    animation: {
+                        duration: 10
+                    },
+                    title: {
+                        display: true,
+                        text: '___________' + data.SimId + ':___________',
+                    }
+                },
+            });
+        };
     </script>
 {% endblock %}

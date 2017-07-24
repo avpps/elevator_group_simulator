@@ -3,8 +3,10 @@ from django.urls import reverse
 from django.http import HttpResponseRedirect, HttpResponse
 from django.utils import timezone
 from django.db.models import Avg, Sum
-
 from django.contrib.auth.decorators import login_required, permission_required
+from django.conf import settings
+
+from sqlalchemy import create_engine
 
 ######  for tests  ##########
 
@@ -12,13 +14,14 @@ import simpy
 import random
 import sqlite3
 import numpy as np
+import pandas
 
 ######  _________  ##########
 
 from simulator.models import Building, BuildingFloors, BuildingGroup, SimulationDetails
 from simulator.models import StatSimulation, StatPassengers, StatCars, SimulationRunDetails
 from simulator.models import CarRunDetails, SimulationSteps, BuildingTypes, StatSimulationSummary
-from simulator.models import Requirements
+from simulator.models import Requirements, CarMotionCycle
 
 
 from django.contrib.auth.forms import UserCreationForm
@@ -240,6 +243,7 @@ def deleteBuilding(request):
 
     building_id = request.POST['del']
     get_object_or_404(Building, pk=building_id).delete()
+    CarMotionCycle.objects.filter(building_id_f=building_id).delete()
 
     return HttpResponseRedirect(reverse('simulator:index'))
 
@@ -249,6 +253,7 @@ def deleteSimulation(request):
 
     simulation_id = request.POST['del']
     get_object_or_404(SimulationDetails, pk=simulation_id).delete()
+    CarMotionCycle.objects.filter(simulation_id_f=simulation_id).delete()
 
     return HttpResponseRedirect(reverse('simulator:index'))
 
@@ -265,7 +270,7 @@ def simulationHistory(request, simulation_id):
 def simulationHistoryRequest(request):
     simulation = get_object_or_404(SimulationDetails, pk=request.GET.get('simulation_id', None))
     step =  request.GET.get('step', None)
-    history = [i.line for i in simulation.simulationrundetails_set.filter(step = step)]
+    history = [i.line for i in simulation.simulationrundetails_set.filter(step = step).order_by('local_id')]
     data = {
         'history': history,
     }
@@ -292,17 +297,17 @@ def simulationStat(request, simulation_id=None):
 def simulationsRequest(request):
     building = get_object_or_404(Building, pk=request.GET.get('building_id', None))
     simulation_list = [x.id for x in SimulationDetails.objects.filter(building=building).order_by('-id')]
-
     data = {
-        'simulation_list': simulation_list
+        'simulation_list': simulation_list,
     }
     return JsonResponse(data)
 
 
 def chartRequest(request):
-    simulation_object = get_object_or_404(SimulationDetails, pk=request.GET.get('simulation_id', None))
+    SimId = request.GET.get('simulation_id', None)
+    simulation_object = get_object_or_404(SimulationDetails, pk=SimId)
     view_data = request.GET.get('view_data', None)
-    SimId = pk=request.GET.get('simulation_id', None)
+    simulation_steps_list = [x.step for x in SimulationSteps.objects.filter(simulation=simulation_object)]
     def numpy_converter(data):
         output_list = []
         for i in data:
@@ -326,6 +331,7 @@ def chartRequest(request):
         SimT = [{'x': i, 'y': j} for (i, j) in zip(forchartlist[0], forchartlist[5])]
         data = {
             'SimId': SimId,
+            'simulation_steps_list': simulation_steps_list,
             'AWT': AWT,
             'ATTD': ATTD,
             'AINT': AINT,
@@ -351,10 +357,38 @@ def chartRequest(request):
             colors.append("hsl({val}, 100%, 50%)" .format(val=counter*20))
         data = {
             'SimId': SimId,
+            'simulation_steps_list': simulation_steps_list,
             'WT_bins': WT_bins,
             'WT_n': WT_n,
             'WT_saturation': WT_saturation,
             'colors': colors,
+        }
+        return JsonResponse(data)
+    if view_data == 'passengersArrival':
+        step = simulation_steps_list[0]
+        arrTimes = [i.arrTime for i in simulation_object.statpassengers_set.only('arrTime').filter(step = step)]
+        from collections import Counter
+        arrTimes_dict = Counter(arrTimes)
+        arrival = [{'x': i, 'y': j}  for i, j in arrTimes_dict.items()]    
+        for i in arrival:
+            print(i)
+        data = {
+            'SimId': SimId,
+            'simulation_steps_list': simulation_steps_list,
+            'AWT': arrival,
+        }
+        return JsonResponse(data)
+    if view_data == 'carMotionCycle':
+        step = simulation_steps_list[0]
+        db_request = 'SELECT * FROM simulator_carmotioncycle WHERE simulation_id_f={} AND step={};'.format(SimId, step)
+        df = pandas.read_sql(db_request, db_engine)
+        df = df.set_index('time')
+        height = eval(df['height'].reset_index().rename(
+            columns={'time': 'x', 'height': 'y'}).to_json(orient='records'))
+        data = {
+            'SimId': SimId,
+            'simulation_steps_list': simulation_steps_list,
+            'height': height,
         }
         return JsonResponse(data)
 
@@ -432,3 +466,13 @@ def generateChart(request):
     }
     return JsonResponse(data)
 
+
+'''values for database access:'''
+db_user = settings.DATABASES['default']['USER']
+db_password = settings.DATABASES['default']['PASSWORD']
+db_database_name = settings.DATABASES['default']['NAME']
+db_url = 'postgresql://{user}:{password}@localhost:5432/{database_name}'.format(
+    user=db_user,
+    password=db_password,
+    database_name=db_database_name,)
+db_engine = create_engine(db_url, echo=False)

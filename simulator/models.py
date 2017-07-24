@@ -118,6 +118,7 @@ class SimulationRunDetails(models.Model):
 
     simulation = models.ForeignKey(SimulationDetails, on_delete=models.CASCADE)
     step = models.FloatField(default=0)
+    local_id = models.FloatField(default=0)
     line = models.TextField(default=0)
 
 class CarRunDetails(models.Model):
@@ -131,6 +132,21 @@ class CarRunDetails(models.Model):
     INT = models.FloatField()
     load = models.IntegerField()
 
+
+class CarMotionCycle(models.Model):
+    '''
+    simulation = models.ForeignKey(SimulationDetails,
+                                   on_delete=models.CASCADE)'''
+    simulation_id_f = models.FloatField(default=0)
+    building_id_f = models.FloatField(default=0)
+    step = models.FloatField(default=0)
+    car = models.IntegerField(default=0)
+    
+    time = models.FloatField(default=0)
+    height = models.FloatField(default=0) 
+    speed = models.FloatField(default=0)
+    acc = models.FloatField(default=0)
+    jerk = models.FloatField(default=0)
 
     
 class Requirements(models.Model):

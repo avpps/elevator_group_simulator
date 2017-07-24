@@ -3,10 +3,14 @@ from django.urls import reverse
 from django.http import HttpResponseRedirect, HttpResponse
 from django.utils import timezone
 from django.db.models import Avg, Sum
+from django.conf import settings
+
+from sqlalchemy import create_engine
 
 import simpy
 import random
 import sqlite3
+import pandas
 
 from simulator.models import Building, BuildingFloors, BuildingGroup
 from simulator.models import SimulationDetails
@@ -14,7 +18,7 @@ from simulator.models import StatSimulation, StatPassengers, StatCars
 from simulator.models import SimulationRunDetails
 from simulator.models import CarRunDetails, SimulationSteps, BuildingTypes
 from simulator.models import StatSimulationSummary
-from simulator.models import Requirements
+from simulator.models import Requirements, CarMotionCycle
 
 
 def simulationRun(request):
@@ -78,14 +82,41 @@ def simulationRun(request):
                
             
     def passengersArrival(env):
+        '''passengers, depending of building traffic type, can appear at:
+        - in pure Up-peak: only at floors with entry>0
+        - in mixed traffic type: at each floors with population>0 or entry>0
+        Anyway: up-peak is special case of mixed traffic and passenger's
+        destination floor is always:
+        - populated floor if entry elevators at entry floor
+        - entry floor if entry elevators at populated floor
+        '''
+        '''[go_up, go_beetweeen_floors, go_down] in % of total building population, eg:
+           [100, 0, 0] mean that all population go up, so it is pure up-peak
+        '''
+        traffic_type = [100, 0, 0]
+        traffic_up = traffic_type[0]
+        traffic_int = traffic_type[1]
+        traffic_down = traffic_type[2]
+
+        entry_floors_id = [
+            i for i in floors_stat if floors_stat[i].entry > 0]
+        entry_floors_entry = [
+            floors_stat[i].entry for i in floors_stat if floors_stat[i].entry > 0]
+        populated_floors_id = [
+            i for i in floors_stat if floors_stat[i].population > 0]
+        populated_floors_entry = [
+            floors_stat[i].population for i in floors_stat if floors_stat[i].population > 0]
         '''continue till generated passanger quantity reach declared
         passangers quantity which should appear in building in current step
         '''
         while len(passengers_stat) <= passengerAll:
-            entryFloor = 0
+            entryFloor = random.choices(entry_floors_id, weights=entry_floors_entry)
+            entryFloor = entryFloor[0]
+            destFloor = random.choices(populated_floors_id, weights=populated_floors_entry)
+            destFloor = destFloor[0]
             # passengers quantity in also random time period passengerActAt
             passengerActAr = abs(int(random.gauss(
-                passengerAvgAr, 
+                passengerAvgAr,
                 passengerAvgAr**0.5)))
             # append all new passengers to passengers database:
             for i in range(passengerActAr):
@@ -95,14 +126,15 @@ def simulationRun(request):
                     j,
                     env.now,
                     entryFloor,
-                    buildingFloorNumber)
+                    destFloor)
                 floors_stat[entryFloor].queue.append(j)
                 history.append(
-                    '%6d at %d appeared passenger %d LobbyQueue %d %s'
+                    '%6d at %d appeared passenger %d and go at %d LobbyQueue %d %s'
                     % (
                         env.now,
                         entryFloor,
                         j,
+                        destFloor,
                         len(floors_stat[entryFloor].queue),
                         str(floors_stat[entryFloor].queue)))
             # passenger arrival time is also random:
@@ -135,6 +167,7 @@ def simulationRun(request):
             SimulationRunDetails.objects.create(
                 simulation=simulation_object,
                 step = arrivalRate,
+                local_id = counter,
                 line = '{:>6} {}'.format(str(counter), i,))
         
         for i, j in passengers_stat.items():
@@ -187,7 +220,6 @@ def simulationRun(request):
                 AINT = round(AINT, 2),
                 ACLF = round(ACLF, 2),)
 
-
         AVGpassengers = StatPassengers.objects.filter(
             simulation=simulation_object).aggregate(Avg('WT'), Avg('TTD'))            
         AVGcars = StatCars.objects.filter(
@@ -195,8 +227,8 @@ def simulationRun(request):
         simulation_time = step_overall_end_time - step_overall_start_time
         
         StatSimulation.objects.create(
-            simulation=simulation_object,
-            step=arrivalRate,
+            simulation = simulation_object,
+            step = arrivalRate,
                                       
             AINT = round(AVGcars['AINT__avg'], 2),
             AWT = round(AVGpassengers['WT__avg'], 2),
@@ -204,6 +236,29 @@ def simulationRun(request):
             ACLF = round(AVGcars['ACLF__avg'], 2),
             simulation_time = round(simulation_time, 6),
             )
+
+        def car_typ_mov_cycl():
+            # calculate typical movement cycle based on:
+            #  - avg ..................
+            for i, j in cars_stat.items():
+                df = pandas.DataFrame({
+                    'time': j.carMovement[0],
+                    'height': j.carMovement[1],
+                    'speed': j.carMovement[2],
+                    'acc': j.carMovement[3],
+                    'jerk': j.carMovement[4]})
+                df['step'] = arrivalRate
+                df['car'] = j.id
+                df['simulation_id_f'] = simulation_id
+                df['building_id_f'] = building_id
+                #df['simulation'] = simulation_id
+
+                df.to_sql('simulator_carmotioncycle', db_engine,
+                          if_exists='append', index=False)
+            '''CarMotionCycle.objects.filter(
+                simulation_id_f=simulation_id).update(simulation=simulation_object)'''
+        car_typ_mov_cycl()
+
 
 
     def reports_generator_summary():
@@ -343,7 +398,7 @@ def simulationRun(request):
 
     class Passenger():
         # containing: ID, arr time, dep time, destTime
-        def __init__(self, env, id, arrTime, entryFloor, buildingFloorNumber):
+        def __init__(self, env, id, arrTime, entryFloor, destFloor):
             self.env = env
             self.id = id
             self.arrTime = arrTime
@@ -351,7 +406,7 @@ def simulationRun(request):
                 self.passengerUnloading(env, self.id))
             self.passengerUnloading_reactivate = env.event()
             self.entryFloor = entryFloor
-            self.destFloor = random.randrange(1, buildingFloorNumber, 1)
+            self.destFloor = destFloor
             self.passengerRun_proc = env.process(self.passengerRun(env, id))
             self.runEnd = False
 
@@ -396,7 +451,8 @@ def simulationRun(request):
                         # passenger wait for entry or for car doors closing:
                         yield self.req | allocatedCar.doorOpenedMonit
                         history.append(
-                            '%6d passenger %d waited to entry car %d with priority %d Doors are %s'
+                            '%6d passenger %d waited to entry car %d with priority %d'
+                            ' Doors are %s'
                             % (
                                 env.now,
                                 passengerId,
@@ -461,6 +517,8 @@ def simulationRun(request):
             self.returnFloor = 0
             # car have capacity limit. This is limiter:
             self.carUsage = simpy.PriorityResource(env, capacity = self.carCapacity)
+            # buffor for avoid once again loaading of passengers just served:
+            self.just_inside = []
             #self.doorOpened = env.process(doorOpened(env))
             self.doorOpened_reactivate = env.event()
             
@@ -470,7 +528,12 @@ def simulationRun(request):
             # cache for statistics:
             self.carDepartures = []
             # cache for movement beetween floors:
-            self.carMovement = [[],[],[],[]]
+            #  - simulation time
+            #  - actual car height in building
+            #  - actual speed
+            #  - actual acceleration
+            #  - actual jerk
+            self.carMovement = [[],[],[],[],[]]
             # avarage car load factor for in current simulation:
             self.avgClfValue = 0
             
@@ -530,7 +593,7 @@ def simulationRun(request):
 
             start_time = env.now
             
-            step_size = 0.01        # movement incrementation
+            step_size = 0.5         # movement incrementation
             t = 0                   # base time
             t2 = 0                  # additional time start when deceleration start
 
@@ -639,6 +702,7 @@ def simulationRun(request):
                 self.carMovement[1].append(initial_car_distance + (run_direction * s))
                 self.carMovement[2].append(v)
                 self.carMovement[3].append(a)
+                self.carMovement[4].append(j)
 
         def runCar(self, env):
             history.append(
@@ -694,6 +758,10 @@ def simulationRun(request):
                             % (
                                 env.now,
                                 self.id))
+                        if self.destination_floor_id > self.carPosition:
+                            self.runDirection = 1
+                        else:
+                            self.runDirection = -1
                     else:
                         self.carWaiting = True
                         yield env.timeout(1)
@@ -701,7 +769,7 @@ def simulationRun(request):
                     '''put passengers inside and during this process 
                     check if anybody else wants enter car:
                     '''
-                    self.just_inside = []
+                    
                     yield env.process(
                         self.putting_inside(env, self.passengersInCar))
                     # check destination floor:
@@ -755,6 +823,15 @@ def simulationRun(request):
                         self.carPosition_level,
                         self.runDirection))
 
+    '''values for database access:'''
+    db_user = settings.DATABASES['default']['USER']
+    db_password = settings.DATABASES['default']['PASSWORD']
+    db_database_name = settings.DATABASES['default']['NAME']
+    db_url = 'postgresql://{user}:{password}@localhost:5432/{database_name}'.format(
+        user=db_user,
+        password=db_password,
+        database_name=db_database_name,)
+    db_engine = create_engine(db_url, echo=False)
 
     '''refering to certain (!last added!) simulation object:'''
     simulationslist = SimulationDetails.objects.order_by('id')
@@ -791,8 +868,8 @@ def simulationRun(request):
     # buildingPopulation defined in input_run()
 
 
-    '''________________________________'''
-    '''main loop for serial simulation:'''
+    ##########################################
+    ###  main loop for serial simulation:  ###
     from time import clock
     for simulation_step in simulationstepslist:
         step_overall_start_time = clock()
@@ -834,8 +911,10 @@ def simulationRun(request):
         reports_generator()
         step_additional_end_time = clock()      #### for tests
         #### for tests:
-        print('----------------', simulation_step.step, 'step time:', step_overall_end_time-step_overall_start_time)
-        print('---', simulation_step.step, 'reports and tests time:', '-------------', step_additional_end_time-step_additional_start_time)  
+        print('----------------', simulation_step.step, 'step time:',
+              step_overall_end_time-step_overall_start_time)
+        print('---', simulation_step.step, 'reports and tests time:',
+              '-------------', step_additional_end_time-step_additional_start_time)
         ####
         
         
