@@ -1,12 +1,3 @@
-''' Simulator module functions:
-  - collect building and group infomration from DB and create environment
-  - run environment simulation 
-  - save results to DB
- 
-
-'''
-
-
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.http import HttpResponseRedirect, HttpResponse
@@ -406,6 +397,11 @@ def simulationRun(request):
 
 
     class Passenger():
+        '''
+        
+        
+        '''
+
         # containing: ID, arr time, dep time, destTime
         def __init__(self, env, id, arrTime, entryFloor, destFloor):
             self.env = env
@@ -862,10 +858,10 @@ def simulationRun(request):
     building_group = BuildingGroup.objects.get(building=building_id)
 
 
-    # import seed value:
+    ''''import seed value:'''
     random.seed(simulation_object.randomSeed)
 
-    # create floorChartList:
+    '''create floorChartList:'''
     floorChartList = []
     input_run()
 
@@ -890,18 +886,18 @@ def simulationRun(request):
         lobbyQueue = []         # actual passengers at lobby
         # [%] value of building population appeared in lobbies per 5 min
         arrivalRate = simulation_step.step
-        # Declare passangers quantity which will appear in building in current step:
-        # previously declared passengersArrivalTime determine how much people appeard
-        # with assumption that they appear every 5[min] in
-        # quantity=(buildingPopulation*arrivalRate/100).
-        # Expression (passengersArrivalTime/300) determine number of 5 minutes periods
-        # in current step -> 5[min]=300[s]
+        '''Declare passangers quantity which will appear in building in current step:
+        previously declared passengersArrivalTime determine how much people appeard
+        with assumption that they appear every 5[min] in
+        quantity=(buildingPopulation*arrivalRate/100).
+        Expression (passengersArrivalTime/300) determine number of 5 minutes periods
+        in current step -> 5[min]=300[s]'''
         passengerAll = int((passengersArrivalTime/300)*(buildingPopulation*arrivalRate/100))
-        # It is parameter for random.gauss function.
-        # Declare how much passenger will in avg appeared at lobbies at the 
-        # same time. Naturally only one passangeer
+        '''It is parameter for random.gauss function.
+        Declare how much passenger will in avg appeared at lobbies at the 
+        same time. Naturally only one passangeer''' 
         passengerAvgAr = 1
-        # ... the same with avg appearance cadency in 5 [min]
+        ''' ... the same with avg appearance cadency in 5 [min] '''
         passengerAvgAt = 300 / (buildingPopulation*(arrivalRate/100))
 
         # activate Simpy env:
